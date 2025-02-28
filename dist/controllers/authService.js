@@ -17,7 +17,7 @@ exports.AuthService = void 0;
 const Bcrypt = require('bcrypt');
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const jwtSecret = process.env.JWT_SECRET || "lrWtgHv/dCyYY6gr5oaTAkdBVDBDHSC4w4E5Vi5/sgY=";
+const jwtSecret = process.env.JWT_SECRET || "";
 class AuthService {
     static validateToken(decoded, request, h) {
         return __awaiter(this, void 0, void 0, function* () {

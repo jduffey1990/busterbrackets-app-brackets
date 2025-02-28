@@ -4,6 +4,7 @@ import { MongoClient, Db } from 'mongodb';
 
 export class DatabaseService {
   private static instance: DatabaseService; // The singleton instance
+  private client: MongoClient | null = null;  // Store the actual client
   private db: Db | null = null;            
 
   private constructor() {}
@@ -29,11 +30,10 @@ export class DatabaseService {
 
     // Otherwise, create a new connection
     const url = process.env.MONGO_URI || "mongodb://localhost:27017/busterBrackets";
-    const client = new MongoClient(url);
-    await client.connect();
+    this.client = new MongoClient(url);
 
-    // When the DB name is in the URI, you can do:
-    this.db = client.db(); // it automatically selects 'busterBrackets'
+    await this.client.connect();
+    this.db = this.client.db(); 
     console.log('Connected successfully to MongoDB (singleton).');
 
     return this.db;
@@ -47,6 +47,14 @@ export class DatabaseService {
       throw new Error('DatabaseService not connected. Call connect() first.');
     }
     return this.db;
+  }
+  public async disconnect(): Promise<void> {
+    if (this.client) {
+      await this.client.close();
+      console.log('Disconnected from MongoDB.');
+      this.client = null;
+      this.db = null;
+    }
   }
 }
 

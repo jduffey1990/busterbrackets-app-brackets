@@ -24,7 +24,14 @@ const init = () => __awaiter(void 0, void 0, void 0, function* () {
     console.log('Initializing server...');
     const server = Hapi.server({
         port: 3000,
-        host: '0.0.0.0'
+        host: '0.0.0.0',
+        routes: {
+            cors: {
+                origin: ['http://localhost:4000'],
+                credentials: true, // allow cookies / Authorization headers
+                additionalHeaders: ['X-CSRFToken', 'Content-Type']
+            },
+        },
     });
     // 1. Connect to MongoDB once
     const dbService = mongodb_service_1.DatabaseService.getInstance();

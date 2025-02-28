@@ -14,6 +14,7 @@ exports.DatabaseService = void 0;
 const mongodb_1 = require("mongodb");
 class DatabaseService {
     constructor() {
+        this.client = null; // Store the actual client
         this.db = null;
     }
     /**
@@ -36,10 +37,9 @@ class DatabaseService {
             }
             // Otherwise, create a new connection
             const url = process.env.MONGO_URI || "mongodb://localhost:27017/busterBrackets";
-            const client = new mongodb_1.MongoClient(url);
-            yield client.connect();
-            // When the DB name is in the URI, you can do:
-            this.db = client.db(); // it automatically selects 'busterBrackets'
+            this.client = new mongodb_1.MongoClient(url);
+            yield this.client.connect();
+            this.db = this.client.db();
             console.log('Connected successfully to MongoDB (singleton).');
             return this.db;
         });
@@ -52,6 +52,16 @@ class DatabaseService {
             throw new Error('DatabaseService not connected. Call connect() first.');
         }
         return this.db;
+    }
+    disconnect() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.client) {
+                yield this.client.close();
+                console.log('Disconnected from MongoDB.');
+                this.client = null;
+                this.db = null;
+            }
+        });
     }
 }
 exports.DatabaseService = DatabaseService;

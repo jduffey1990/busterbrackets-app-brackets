@@ -3,7 +3,10 @@ import { ObjectId } from "mongodb";
 export interface Bracket {
     _id: ObjectId;
     userId: ObjectId;
-    bracket: number []
-    offshootBracket: number []
+    name: string;
+    bracket: number [];
+    offshootBracket: number [];
+    createdAt: Date;
+    updatedAt: Date;
 }
 

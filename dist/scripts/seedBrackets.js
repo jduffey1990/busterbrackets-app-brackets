@@ -13,18 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongodb_1 = require("mongodb");
 const Bcrypt = require('bcrypt');
 const mongodb_service_1 = require("../controllers/mongodb.service");
-const arrayOfUsers = [
-    "67a295f0f276391bb6b46475",
-    "67a295f0f276391bb6b46476",
-    "67a295f0f276391bb6b46477",
-    "67a295f0f276391bb6b46478",
-    "67a295f0f276391bb6b46479",
-    "67a295f0f276391bb6b4647a",
-    "67a295f0f276391bb6b4647b",
-    "67a295f0f276391bb6b4647c",
-    "67a295f0f276391bb6b4647d",
-    "67a295f0f276391bb6b4647e"
-];
+const arrayOfUsers = ["67c08eabe3e706cfd9dd4d70", "67c08eabe3e706cfd9dd4d70", "67c08eabe3e706cfd9dd4d70"];
 const baseBracket = [
     1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
     1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
@@ -32,23 +21,29 @@ const baseBracket = [
     1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15
 ];
 const baseOffshoot = [
-    1, 8, 5, 4, 6, 3, 7, 2, // maybe “winners” of the first region
-    1, 8, 5, 4, 6, 3, 7, 2 // repeated for demonstration or another region
+    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
+    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
+    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
+    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15
 ];
-// Create 10 bracket arrays (one per user). 
-// You can randomize, customize seeds, or store winners/picks as needed.
-const arrayOfBrackets = new Array(10).fill(null).map(() => ([...baseBracket]));
-// Create 10 offshoot arrays (one per user). 
-// Adjust length/values to represent deeper-round picks or alternate paths.
-const arrayOfOffshoots = new Array(10).fill(null).map(() => ([...baseOffshoot]));
+const arrayOfBrackets = new Array(3).fill(null).map(() => ([...baseBracket]));
+const arrayOfOffshoots = new Array(3).fill(null).map(() => ([...baseOffshoot]));
+const now = new Date();
 // Build the Bracket documents:
 const brackets = arrayOfUsers.map((userIdString, i) => ({
     _id: new mongodb_1.ObjectId(),
     userId: new mongodb_1.ObjectId(userIdString), // Convert string to ObjectId
+    name: `bracket ${i}th iteration`,
     bracket: arrayOfBrackets[i],
-    offshootBracket: arrayOfOffshoots[i]
+    offshootBracket: arrayOfOffshoots[i],
+    createdAt: now,
+    updatedAt: now
 }));
+console.log('Brackets count:', brackets.length);
+console.log('Brackets:', brackets);
 const seedBrackets = () => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Brackets count:', brackets.length);
+    console.log('Brackets:', brackets);
     try {
         // 1. Initialize and connect to the database
         const dbService = mongodb_service_1.DatabaseService.getInstance();
