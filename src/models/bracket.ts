@@ -4,8 +4,8 @@ export interface Bracket {
     _id: ObjectId;
     userId: ObjectId;
     name: string;
-    bracket: number [];
-    offshootBracket: number [];
+    bracket: string [];
+    offshootBracket: string [];
     createdAt: Date;
     updatedAt: Date;
 }

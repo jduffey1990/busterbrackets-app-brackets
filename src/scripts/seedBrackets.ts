@@ -5,24 +5,14 @@ const Bcrypt = require('bcrypt');
 import { DatabaseService } from '../controllers/mongodb.service';
 import { Bracket } from '../models/bracket';
 
-const baseBracket = [
-  1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-  1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-  1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-  1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15
-];
+const baseBracket = ["e1", "e8", "e5", "e4", "e6", "e3", "e7", "e2", "e1", "e5", "e6", "e2", "e1", "e2", "w1", "w8", "w5", "w4", "w6", "w3", "w7", "w2", "w1", "w5", "w6", "w2", "w1", "w2", "m1", "m8", "m5", "m4", "m6", "m3", "m7", "m2", "m1", "m5", "m6", "m2", "m1", "m2", "s1", "s8", "s5", "s4", "s6", "s3", "s7", "s2", "s1", "s5", "s6", "s2", "s1", "s2", "e1", "w1", "m1", "s1", "e1", "s1", "e1"]
 
-const baseOffshoot = [
-  1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-  1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-  1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-  1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15
-];
+const baseOffshoot = ["e1", "e8", "e5", "e4", "e6", "e3", "e7", "e2", "e1", "e5", "e6", "e2", "e1", "e2", "w1", "w8", "w5", "w4", "w6", "w3", "w7", "w2", "w1", "w5", "w6", "w2", "w1", "w2", "m1", "m8", "m5", "m4", "m6", "m3", "m7", "m2", "m1", "m5", "m6", "m2", "m1", "m2", "s1", "s8", "s5", "s4", "s6", "s3", "s7", "s2", "s1", "s5", "s6", "s2", "s1", "s2", "e1", "w1", "m1", "s1", "e1", "s1", "e1"]
 
 
 
-const arrayOfBrackets: number[][] = new Array(3).fill(null).map(() => ([ ...baseBracket ]));
-const arrayOfOffshoots: number[][] = new Array(3).fill(null).map(() => ([ ...baseOffshoot ]));
+const arrayOfBrackets: string[][] = new Array(3).fill(null).map(() => ([ ...baseBracket ]));
+const arrayOfOffshoots: string[][] = new Array(3).fill(null).map(() => ([ ...baseOffshoot ]));
 
 const now = new Date()
 

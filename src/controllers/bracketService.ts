@@ -44,4 +44,27 @@ export class BracketService {
       throw error;
     }
   }
+
+  public static async createBracket(bracketObject: Bracket): Promise<Bracket | null> {
+    try {
+      const db = DatabaseService.getInstance().getDb();
+      
+      // Insert the user document into the 'brackets' collection
+      const insertResult = await db.collection<Bracket>('brackets').insertOne(bracketObject);
+      
+      if (insertResult.acknowledged) {
+        // Optionally, fetch the full user document from the DB to return
+        const createdBracket = await db
+          .collection<Bracket>('brackets')
+          .findOne({ _id: insertResult.insertedId });
+          
+        return createdBracket || null;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Failed to create bracket:', error);
+      throw error;
+    }
+  }
 }
