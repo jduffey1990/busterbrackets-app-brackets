@@ -7,16 +7,16 @@ import { Bracket } from '../models/bracket'
 import { ObjectId } from 'mongodb';
 
 export const bracketRoutes = [
-    {
-        method: 'GET',
-        path: '/brackets',
-        handler: (request: Request, h: ResponseToolkit) => {
-            return BracketService.findAllBrackets()
-        },
-        options: {
-            auth: false
-        }
-    },
+    // {
+    //     method: 'GET',
+    //     path: '/brackets',
+    //     handler: (request: Request, h: ResponseToolkit) => {
+    //         return BracketService.findAllBrackets()
+    //     },
+    //     options: {
+    //         auth: false
+    //     }
+    // },
     {
         method: 'GET',
         path: '/get-bracket',
