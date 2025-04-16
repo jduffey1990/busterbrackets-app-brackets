@@ -18,6 +18,16 @@ export const bracketRoutes = [
     //     }
     // },
     {
+      method: 'GET',
+      path: '/ping-bracket',
+      handler: (request: Request, h: ResponseToolkit) => {
+        return h.response("pinged backend").code(200);
+      },
+      options: {
+        auth: false,
+      },
+  },
+    {
         method: 'GET',
         path: '/get-bracket',
         handler: (request: Request, h: ResponseToolkit) => {
