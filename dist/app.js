@@ -15,9 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // app.ts 
 const Hapi = require('@hapi/hapi');
 const dotenv_1 = __importDefault(require("dotenv"));
-const mongodb_service_1 = require("./controllers/mongodb.service");
 const authService_1 = require("./controllers/authService");
+const mongodb_service_1 = require("./controllers/mongodb.service");
 const bracketRoutes_1 = require("./routes/bracketRoutes");
+const tournamentDataRoutes_1 = require("./routes/tournamentDataRoutes");
 dotenv_1.default.config();
 const jwtSecret = process.env.JWT_SECRET;
 const init = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -27,7 +28,7 @@ const init = () => __awaiter(void 0, void 0, void 0, function* () {
         host: '0.0.0.0',
         routes: {
             cors: {
-                origin: ['http://localhost:4000'],
+                origin: ['http://localhost:4000', 'http://busterbrackets.com.s3-website.us-east-2.amazonaws.com', 'https://main.d2pmlcs4q5ckgp.amplifyapp.com', 'https://busterbrackets.com', 'http://busterbrackets.com'],
                 credentials: true, // allow cookies / Authorization headers
                 additionalHeaders: ['X-CSRFToken', 'Content-Type']
             },
@@ -49,7 +50,7 @@ const init = () => __awaiter(void 0, void 0, void 0, function* () {
     });
     server.auth.default('jwt');
     // 3. Register routes
-    server.route([...bracketRoutes_1.bracketRoutes]);
+    server.route([...bracketRoutes_1.bracketRoutes, ...tournamentDataRoutes_1.tournamentDataRoutes]);
     yield server.start();
     console.log('Server running on %s', server.info.uri);
 });

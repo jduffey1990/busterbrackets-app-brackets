@@ -2,11 +2,10 @@
 const Hapi = require('@hapi/hapi');
 import dotenv from 'dotenv';
 
-import { DatabaseService } from './controllers/mongodb.service';
 import { AuthService } from './controllers/authService';
-import { BracketService } from './controllers/bracketService';
+import { DatabaseService } from './controllers/mongodb.service';
 import { bracketRoutes } from './routes/bracketRoutes';
-import { ResponseToolkit } from '@hapi/hapi';
+import { tournamentDataRoutes } from './routes/tournamentDataRoutes';
 
 dotenv.config();
 const jwtSecret = process.env.JWT_SECRET;
@@ -46,7 +45,7 @@ const init = async () => {
     server.auth.default('jwt');
 
   // 3. Register routes
-  server.route([...bracketRoutes]);
+  server.route([...bracketRoutes, ...tournamentDataRoutes]);
   await server.start();
   console.log('Server running on %s', server.info.uri);
 };

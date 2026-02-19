@@ -1,15 +1,14 @@
-// src/controllers/userService.ts
+// src/controllers/bracketService.ts
 import { ObjectId } from 'mongodb';
 import { Bracket } from '../models/bracket';
 import { DatabaseService } from './mongodb.service';
 
 export class BracketService {
   /**
-   * Fetch all users from the "users" collection.
+   * Fetch all brackets.
    */
   public static async findAllBrackets(): Promise<Bracket[]> {
     try {
-      // Grab the existing DB connection from the singleton
       const db = DatabaseService.getInstance().getDb();
       const bracketsCollection = db.collection<Bracket>('brackets');
       return await bracketsCollection.find().toArray();
@@ -20,7 +19,7 @@ export class BracketService {
   }
 
   /**
-   * Fetch a single user by ID from the "users" collection.
+   * Fetch a single bracket by ID.
    */
   public static async findBracketById(id: string): Promise<Bracket | null> {
     try {
@@ -34,33 +33,36 @@ export class BracketService {
       throw error;
     }
   }
-  public static async findBracketByUserId(id: string): Promise<Bracket [] | null> {
+
+  /**
+   * Fetch all brackets for a user.
+   */
+  public static async findBracketByUserId(id: string): Promise<Bracket[] | null> {
     try {
       const db = DatabaseService.getInstance().getDb();
       const bracketsCollection = db.collection<Bracket>('brackets');
-      return await bracketsCollection.find({userId: new ObjectId(id)}).toArray();
+      return await bracketsCollection.find({ userId: new ObjectId(id) }).toArray();
     } catch (error) {
       console.error('Failed to find bracket:', error);
       throw error;
     }
   }
 
+  /**
+   * Create a new bracket.
+   * Accepts StructuredBracket format (post-migration).
+   */
   public static async createBracket(bracketObject: Bracket): Promise<Bracket | null> {
     try {
       const db = DatabaseService.getInstance().getDb();
-      
-      // Insert the user document into the 'brackets' collection
       const insertResult = await db.collection<Bracket>('brackets').insertOne(bracketObject);
-      
+
       if (insertResult.acknowledged) {
-        // Optionally, fetch the full user document from the DB to return
         const createdBracket = await db
           .collection<Bracket>('brackets')
           .findOne({ _id: insertResult.insertedId });
-          
         return createdBracket || null;
       }
-      
       return null;
     } catch (error) {
       console.error('Failed to create bracket:', error);

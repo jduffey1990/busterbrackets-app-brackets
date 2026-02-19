@@ -10,17 +10,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BracketService = void 0;
-// src/controllers/userService.ts
+// src/controllers/bracketService.ts
 const mongodb_1 = require("mongodb");
 const mongodb_service_1 = require("./mongodb.service");
 class BracketService {
     /**
-     * Fetch all users from the "users" collection.
+     * Fetch all brackets.
      */
     static findAllBrackets() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // Grab the existing DB connection from the singleton
                 const db = mongodb_service_1.DatabaseService.getInstance().getDb();
                 const bracketsCollection = db.collection('brackets');
                 return yield bracketsCollection.find().toArray();
@@ -32,7 +31,7 @@ class BracketService {
         });
     }
     /**
-     * Fetch a single user by ID from the "users" collection.
+     * Fetch a single bracket by ID.
      */
     static findBracketById(id) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -49,6 +48,9 @@ class BracketService {
             }
         });
     }
+    /**
+     * Fetch all brackets for a user.
+     */
     static findBracketByUserId(id) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -58,6 +60,29 @@ class BracketService {
             }
             catch (error) {
                 console.error('Failed to find bracket:', error);
+                throw error;
+            }
+        });
+    }
+    /**
+     * Create a new bracket.
+     * Accepts StructuredBracket format (post-migration).
+     */
+    static createBracket(bracketObject) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const db = mongodb_service_1.DatabaseService.getInstance().getDb();
+                const insertResult = yield db.collection('brackets').insertOne(bracketObject);
+                if (insertResult.acknowledged) {
+                    const createdBracket = yield db
+                        .collection('brackets')
+                        .findOne({ _id: insertResult.insertedId });
+                    return createdBracket || null;
+                }
+                return null;
+            }
+            catch (error) {
+                console.error('Failed to create bracket:', error);
                 throw error;
             }
         });

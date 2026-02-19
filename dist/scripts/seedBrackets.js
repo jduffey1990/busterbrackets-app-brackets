@@ -13,43 +13,35 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongodb_1 = require("mongodb");
 const Bcrypt = require('bcrypt');
 const mongodb_service_1 = require("../controllers/mongodb.service");
-const arrayOfUsers = ["67c08eabe3e706cfd9dd4d70", "67c08eabe3e706cfd9dd4d70", "67c08eabe3e706cfd9dd4d70"];
-const baseBracket = [
-    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15
-];
-const baseOffshoot = [
-    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15,
-    1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15
-];
+const baseBracket = ["e1", "e8", "e5", "e4", "e6", "e3", "e7", "e2", "e1", "e5", "e6", "e2", "e1", "e2", "w1", "w8", "w5", "w4", "w6", "w3", "w7", "w2", "w1", "w5", "w6", "w2", "w1", "w2", "m1", "m8", "m5", "m4", "m6", "m3", "m7", "m2", "m1", "m5", "m6", "m2", "m1", "m2", "s1", "s8", "s5", "s4", "s6", "s3", "s7", "s2", "s1", "s5", "s6", "s2", "s1", "s2", "e1", "w1", "m1", "s1", "e1", "s1", "e1"];
+const baseOffshoot = ["e1", "e8", "e5", "e4", "e6", "e3", "e7", "e2", "e1", "e5", "e6", "e2", "e1", "e2", "w1", "w8", "w5", "w4", "w6", "w3", "w7", "w2", "w1", "w5", "w6", "w2", "w1", "w2", "m1", "m8", "m5", "m4", "m6", "m3", "m7", "m2", "m1", "m5", "m6", "m2", "m1", "m2", "s1", "s8", "s5", "s4", "s6", "s3", "s7", "s2", "s1", "s5", "s6", "s2", "s1", "s2", "e1", "w1", "m1", "s1", "e1", "s1", "e1"];
 const arrayOfBrackets = new Array(3).fill(null).map(() => ([...baseBracket]));
 const arrayOfOffshoots = new Array(3).fill(null).map(() => ([...baseOffshoot]));
 const now = new Date();
-// Build the Bracket documents:
-const brackets = arrayOfUsers.map((userIdString, i) => ({
-    _id: new mongodb_1.ObjectId(),
-    userId: new mongodb_1.ObjectId(userIdString), // Convert string to ObjectId
-    name: `bracket ${i}th iteration`,
-    bracket: arrayOfBrackets[i],
-    offshootBracket: arrayOfOffshoots[i],
-    createdAt: now,
-    updatedAt: now
-}));
-console.log('Brackets count:', brackets.length);
-console.log('Brackets:', brackets);
 const seedBrackets = () => __awaiter(void 0, void 0, void 0, function* () {
-    console.log('Brackets count:', brackets.length);
-    console.log('Brackets:', brackets);
+    const dbService = mongodb_service_1.DatabaseService.getInstance();
     try {
-        // 1. Initialize and connect to the database
-        const dbService = mongodb_service_1.DatabaseService.getInstance();
-        yield dbService.connect(); // <--- make sure we connect
-        // 2. Now get the DB and do your insert
+        yield dbService.connect();
         const db = dbService.getDb();
+        //get first user for testing
+        const users = yield db.collection('users').find({}).toArray();
+        if (users.length === 0) {
+            console.error('No users found! Make sure you have seeded users first.');
+            return;
+        }
+        else {
+            console.log("users found", users);
+        }
+        const userId = users[0]._id;
+        const brackets = new Array(3).fill(null).map((_, i) => ({
+            _id: new mongodb_1.ObjectId(),
+            userId, // dynamically set from the fetched user
+            name: `bracket ${i}th iteration`,
+            bracket: arrayOfBrackets[i],
+            offshootBracket: arrayOfOffshoots[i],
+            createdAt: now,
+            updatedAt: now
+        }));
         const bracketsCollection = db.collection('brackets');
         // Insert bracket documents into the database
         yield bracketsCollection.insertMany(brackets);
@@ -57,6 +49,9 @@ const seedBrackets = () => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         console.error('Error seeding brackets:', error);
+    }
+    finally {
+        yield dbService.disconnect();
     }
 });
 seedBrackets().catch(console.error);
