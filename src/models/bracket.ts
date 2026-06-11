@@ -16,6 +16,7 @@ export interface Bracket {
 export interface AiBreakdown {
     content: string;
     isPostTournament: boolean;   // cached against this state; regenerated when it flips
+    promptVersion: string;       // regenerated when the prompt/analysis logic changes
     generatedAt: Date;
 }
 

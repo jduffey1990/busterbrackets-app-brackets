@@ -65,13 +65,48 @@ export function formatTeamDisplay(seedString: string, teamNames: Record<string, 
 }
 
 /**
- * Compare two structured brackets and return stats.
- * An "upset" is a user pick whose seed is higher (worse) than the official pick.
+ * Resolve just the team name (no seed prefix), e.g. "e1" -> "Michigan".
  */
-export function compareBrackets(official: StructuredBracket, user: StructuredBracket): ComparisonStats {
+export function formatTeamTitle(seedString: string, teamNames: Record<string, string>): string {
+  return teamNames?.[seedString] || baseTeamNames[seedString] || seedString;
+}
+
+// A pick only counts as an "upset" if it's a double-digit seed (10+).
+const UPSET_SEED_THRESHOLD = 10;
+
+function seedOf(seedString: string): number {
+  return parseInt(seedString.replace(/\D/g, ''), 10);
+}
+
+/**
+ * Compare the user's bracket against the official/benchmark bracket.
+ *
+ * `upsets` are DISTINCT double-digit-seed (10+) teams the user advanced, counted
+ * once per team no matter how many rounds they rode them:
+ *   - post-tournament (hasResults=true): only teams they picked CORRECTLY, i.e.
+ *     the longshots they actually nailed.
+ *   - preview (hasResults=false): every such bold pick, since there's nothing to
+ *     be "correct" against yet.
+ * Returned biggest-underdog-first.
+ */
+export function compareBrackets(
+  official: StructuredBracket,
+  user: StructuredBracket,
+  hasResults: boolean,
+): ComparisonStats {
   let correctPicks = 0;
   let totalGames = 0;
-  const upsets: string[] = [];
+  const upsetSeeds = new Set<string>();
+
+  // Score one slot of the bracket and record qualifying upset picks.
+  const consider = (officialPick: string, userPick: string) => {
+    totalGames++;
+    const matched = officialPick === userPick;
+    if (matched) correctPicks++;
+    if (seedOf(userPick) >= UPSET_SEED_THRESHOLD && (hasResults ? matched : true)) {
+      upsetSeeds.add(userPick);
+    }
+  };
 
   const regions: (keyof StructuredBracket)[] = ['east', 'midwest', 'south', 'west'];
   const rounds: (keyof Omit<StructuredBracket['east'], 'regionChamp'>)[] = ['round32', 'sweet16', 'elite8'];
@@ -85,97 +120,81 @@ export function compareBrackets(official: StructuredBracket, user: StructuredBra
       const userRound = userRegion[round];
       const len = Math.min(officialRound.length, userRound.length);
       for (let i = 0; i < len; i++) {
-        totalGames++;
-        if (officialRound[i] === userRound[i]) {
-          correctPicks++;
-        } else {
-          const officialSeed = parseInt(officialRound[i].replace(/\D/g, ''), 10);
-          const userSeed = parseInt(userRound[i].replace(/\D/g, ''), 10);
-          if (userSeed > officialSeed) {
-            upsets.push(userRound[i]);
-          }
-        }
+        consider(officialRound[i], userRound[i]);
       }
     }
 
-    // Region champ
-    totalGames++;
-    if (officialRegion.regionChamp === userRegion.regionChamp) {
-      correctPicks++;
-    }
+    consider(officialRegion.regionChamp, userRegion.regionChamp);
   }
 
-  // Finals
-  for (let i = 0; i < official.finals.semifinals.length; i++) {
-    totalGames++;
-    if (official.finals.semifinals[i] === user.finals.semifinals[i]) {
-      correctPicks++;
-    } else {
-      const officialSeed = parseInt(official.finals.semifinals[i].replace(/\D/g, ''), 10);
-      const userSeed = parseInt(user.finals.semifinals[i].replace(/\D/g, ''), 10);
-      if (userSeed > officialSeed) {
-        upsets.push(user.finals.semifinals[i]);
-      }
-    }
+  // Final Four → championship game → champion
+  const semiLen = Math.min(official.finals.semifinals.length, user.finals.semifinals.length);
+  for (let i = 0; i < semiLen; i++) {
+    consider(official.finals.semifinals[i], user.finals.semifinals[i]);
   }
+  consider(official.finals.champion, user.finals.champion);
 
-  // Champion
-  totalGames++;
-  if (official.finals.champion === user.finals.champion) {
-    correctPicks++;
-  }
+  const upsets = Array.from(upsetSeeds).sort((a, b) => seedOf(b) - seedOf(a));
 
   return { correctPicks, totalGames, upsets };
 }
 
-/**
- * Build the LLM prompt. Post-tournament reviews actual results; otherwise it's
- * a prospective preview compared against the all-favorites base bracket.
- */
-export function buildPrompt(params: {
-  isPostTournament: boolean;
+export interface BreakdownFacts {
   year: string;
-  userBracket: StructuredBracket;
-  officialBracket: StructuredBracket;
-  comparison: ComparisonStats;
-  teamNames: Record<string, string>;
-}): string {
-  const { isPostTournament, year, userBracket, officialBracket, comparison, teamNames } = params;
-  const teamNamesJson = JSON.stringify(teamNames);
+  isPostTournament: boolean;
+  correctPicks: number;
+  totalGames: number;
+  userChampion: string;          // resolved name, e.g. "Michigan"
+  userFinalFour: string[];       // resolved names of the four region champions
+  upsetPicks: string[];          // pre-formatted, e.g. "11. South Florida"
+  actualChampion?: string;       // post-tournament only
+  actualFinalFour?: string[];    // post-tournament only
+  championMatched?: boolean;     // post-tournament only
+}
 
-  if (isPostTournament) {
+/**
+ * Build the LLM prompt from pre-resolved, verified facts (names already mapped,
+ * upsets already deduped). The model is told to write ONLY from these facts so
+ * it can't hallucinate teams, results, or storylines from raw bracket JSON.
+ */
+export function buildPrompt(facts: BreakdownFacts): string {
+  const upsetList = facts.upsetPicks.length ? facts.upsetPicks.join(', ') : 'none';
+
+  if (facts.isPostTournament) {
     return `
-      You are a sports analyst reviewing a college basketball tournament bracket.
-      Year: ${year}
-      User's bracket: ${JSON.stringify(userBracket)}
-      Official results: ${JSON.stringify(officialBracket)}
-      Comparison stats: ${JSON.stringify(comparison)}
-      Team names mapping: ${teamNamesJson}
+You are a sports analyst writing a short, upbeat recap of ONE person's completed tournament bracket for the ${facts.year} college basketball tournament.
+Use ONLY the verified facts below. Do not invent any team names, scores, matchups, seeds, or storylines that are not listed. If something isn't in the facts, don't mention it.
 
-      Please write a short (three paragraph max), sportscaster-style post-tournament analysis without copyright infringement describing:
-      1. Notable correct upset picks (two sentences max)
-      2. How the bracket winner prediction fared (two sentences max)
-      3. Overall bracket performance summary
-      4. Do not hallucinate storylines not present in the data.
-      5. Exclude words "March Madness, NCAA, Sweet Sixteen, Elite Eight, Final Four" due to copyright
-    `;
+VERIFIED FACTS
+- Bracket score: ${facts.correctPicks} of ${facts.totalGames} picks correct.
+- Their predicted champion: ${facts.userChampion}.
+- Actual champion: ${facts.actualChampion}.
+- Champion pick correct: ${facts.championMatched ? 'yes' : 'no'}.
+- Their predicted last-four teams: ${facts.userFinalFour.join(', ')}.
+- Actual last-four teams: ${(facts.actualFinalFour ?? []).join(', ')}.
+- Double-digit-seed underdogs they correctly called: ${upsetList}.
+
+Write at most three paragraphs, sportscaster style:
+1. Their best correct underdog calls. If "none", say they mostly played the favorites rather than inventing upsets.
+2. How their champion prediction turned out (use the facts above — do not contradict them).
+3. A one-line overall performance summary based on the score.
+Do NOT use the trademarked phrases "March Madness", "NCAA", "Sweet Sixteen", "Elite Eight", or "Final Four".
+`;
   }
 
   return `
-    You are a sports analyst previewing a college basketball tournament bracket.
-    Year: ${year}
-    User's bracket: ${JSON.stringify(userBracket)}
-    Benchmark bracket: ${JSON.stringify(officialBracket)}
-    Comparison stats: ${JSON.stringify(comparison)}
-    Team names mapping: ${teamNamesJson}
+You are a sports analyst writing a short, upbeat PREVIEW of ONE person's bracket picks for the upcoming ${facts.year} college basketball tournament. The tournament has NOT happened yet — these are prospective picks.
+Use ONLY the verified facts below. Do not invent any team names, results, seeds, or storylines that are not listed.
 
-    Please write a short (three paragraph max), sportscaster-style preview without copyright infringement describing:
-    1. Two notable upsets they picked compared to benchmark (two sentences max) either:
-        a. big underdog (seed over 12)
-        b. deep run underdogs
-    2. Bracket winner (two sentences max)
-    3. Remember that the tournament hasn't actually happened, yet, so these are prospective picks.
-    4. Do not hallucinate past years results or storylines.
-    5. Exclude words "March Madness, NCAA, Sweet Sixteen, Elite Eight, Final Four" due to copyright
-  `;
+VERIFIED FACTS
+- Their predicted champion: ${facts.userChampion}.
+- Their predicted last-four teams: ${facts.userFinalFour.join(', ')}.
+- Bold double-digit-seed underdogs they're riding: ${upsetList}.
+
+Write at most three short paragraphs, sportscaster style:
+1. The boldest underdog picks they're making. If "none", note they're playing it safe rather than inventing upsets.
+2. Their championship pick and why it's intriguing.
+3. Keep it forward-looking — the games haven't been played yet.
+Do NOT use the trademarked phrases "March Madness", "NCAA", "Sweet Sixteen", "Elite Eight", or "Final Four".
+`;
 }
