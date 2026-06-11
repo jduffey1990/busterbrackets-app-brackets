@@ -19,6 +19,8 @@ const authService_1 = require("./controllers/authService");
 const mongodb_service_1 = require("./controllers/mongodb.service");
 const bracketRoutes_1 = require("./routes/bracketRoutes");
 const tournamentDataRoutes_1 = require("./routes/tournamentDataRoutes");
+const breakdownRoutes_1 = require("./routes/breakdownRoutes");
+const newsRoutes_1 = require("./routes/newsRoutes");
 dotenv_1.default.config();
 const jwtSecret = process.env.JWT_SECRET;
 const init = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -50,7 +52,7 @@ const init = () => __awaiter(void 0, void 0, void 0, function* () {
     });
     server.auth.default('jwt');
     // 3. Register routes
-    server.route([...bracketRoutes_1.bracketRoutes, ...tournamentDataRoutes_1.tournamentDataRoutes]);
+    server.route([...bracketRoutes_1.bracketRoutes, ...tournamentDataRoutes_1.tournamentDataRoutes, ...breakdownRoutes_1.breakdownRoutes, ...newsRoutes_1.newsRoutes]);
     yield server.start();
     console.log('Server running on %s', server.info.uri);
 });

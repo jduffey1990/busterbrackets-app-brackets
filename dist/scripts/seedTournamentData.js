@@ -17,9 +17,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongodb_1 = require("mongodb");
 const mongodb_service_1 = require("../controllers/mongodb.service");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const teams2025 = {
     // EAST
     e1: "Duke", e2: "Alabama", e3: "Wisconsin", e4: "Arizona",

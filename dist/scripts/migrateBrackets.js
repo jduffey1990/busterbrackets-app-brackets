@@ -21,9 +21,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongodb_service_1 = require("../controllers/mongodb.service");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const DRY_RUN = ((_a = process.env.DRY_RUN) !== null && _a !== void 0 ? _a : 'true') !== 'false';
 // ─── Helpers ─────────────────────────────────────────────────────────
 const REGION_PREFIX_MAP = {

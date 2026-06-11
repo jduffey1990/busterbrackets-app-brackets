@@ -65,6 +65,23 @@ class BracketService {
         });
     }
     /**
+     * Cache a generated AI breakdown on the bracket document.
+     */
+    static saveBreakdown(id, aiBreakdown) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const db = mongodb_service_1.DatabaseService.getInstance().getDb();
+                yield db
+                    .collection('brackets')
+                    .updateOne({ _id: new mongodb_1.ObjectId(id) }, { $set: { aiBreakdown } });
+            }
+            catch (error) {
+                // Caching is best-effort — a failure here shouldn't fail the request.
+                console.error('Failed to cache bracket breakdown:', error);
+            }
+        });
+    }
+    /**
      * Create a new bracket.
      * Accepts StructuredBracket format (post-migration).
      */

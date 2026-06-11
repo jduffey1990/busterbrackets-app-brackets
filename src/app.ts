@@ -7,6 +7,7 @@ import { DatabaseService } from './controllers/mongodb.service';
 import { bracketRoutes } from './routes/bracketRoutes';
 import { tournamentDataRoutes } from './routes/tournamentDataRoutes';
 import { breakdownRoutes } from './routes/breakdownRoutes';
+import { newsRoutes } from './routes/newsRoutes';
 
 dotenv.config();
 const jwtSecret = process.env.JWT_SECRET;
@@ -46,7 +47,7 @@ const init = async () => {
     server.auth.default('jwt');
 
   // 3. Register routes
-  server.route([...bracketRoutes, ...tournamentDataRoutes, ...breakdownRoutes]);
+  server.route([...bracketRoutes, ...tournamentDataRoutes, ...breakdownRoutes, ...newsRoutes]);
   await server.start();
   console.log('Server running on %s', server.info.uri);
 };
