@@ -1,6 +1,6 @@
 // src/controllers/bracketService.ts
 import { ObjectId } from 'mongodb';
-import { Bracket } from '../models/bracket';
+import { Bracket, AiBreakdown } from '../models/bracket';
 import { DatabaseService } from './mongodb.service';
 
 export class BracketService {
@@ -45,6 +45,21 @@ export class BracketService {
     } catch (error) {
       console.error('Failed to find bracket:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Cache a generated AI breakdown on the bracket document.
+   */
+  public static async saveBreakdown(id: string, aiBreakdown: AiBreakdown): Promise<void> {
+    try {
+      const db = DatabaseService.getInstance().getDb();
+      await db
+        .collection<Bracket>('brackets')
+        .updateOne({ _id: new ObjectId(id) }, { $set: { aiBreakdown } });
+    } catch (error) {
+      // Caching is best-effort — a failure here shouldn't fail the request.
+      console.error('Failed to cache bracket breakdown:', error);
     }
   }
 

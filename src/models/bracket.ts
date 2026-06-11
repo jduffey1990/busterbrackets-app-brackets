@@ -10,5 +10,12 @@ export interface Bracket {
     offshootBracket: StructuredBracket;
     createdAt: Date;
     updatedAt: Date;
+    aiBreakdown?: AiBreakdown;   // cached LLM breakdown so we don't re-bill OpenAI on every view
+}
+
+export interface AiBreakdown {
+    content: string;
+    isPostTournament: boolean;   // cached against this state; regenerated when it flips
+    generatedAt: Date;
 }
 
