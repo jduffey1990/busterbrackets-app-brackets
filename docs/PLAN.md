@@ -5,8 +5,8 @@ This file holds the plan, the status, and one "as built" record per phase.
 
 ## Start here
 
-Branch `feat/historical-odds` in `~/code/buster/brackets`.
-Phases 1 and 2 are built; see the "as built" records at the end for what was verified.
+Phases 1 and 2 are on `main` (PR 1, merged 2026-11-03); see the "as built" records at the end for what was verified.
+The review findings from that PR are addressed on `fix/review-findings` (see "Review follow-up" below).
 Phases 3 and 4 are specified below and not started.
 
 ```bash
@@ -36,6 +36,7 @@ After a one-time backfill of 1985 to 2024, the only yearly task is the one alrea
 
 `tournamentGames` (see `src/models/tournamentGame.ts`): one row per game with `year`, `round`, `regionA/seedA`, `regionB/seedB`, `winner` ("A" or "B"), `source` ("structured" or "kaggle").
 Derived state: a year is always rewritten whole.
+A year is tracked once its results derive at least one game; with no derivable games only that source's rows are removed, so a backfilled year keeps its history until real results replace it.
 Unique index on `(year, round, regionA, seedA)`.
 
 ## Phases
@@ -81,10 +82,21 @@ Install the no-mistakes gate in `ui/` when this phase starts.
 
 ## Open items
 
-- The 2025 results entered through Admin were checked game by game against the Kaggle 2025 rows in phase 2: all 63 agree.
-  The seed script's 2025 region results were never compared (the local database copy was), so a fresh seed should be followed by the same comparison.
+- The 2025 results, both the Admin-entered copy and the seed script's data, were checked game by game against the Kaggle 2025 rows: all 63 agree.
+- The Admin page labels the four finalists only as region champs 1 to 4, with no hint that slots 1 and 2 form one semifinal; entering them in region order stores two wrong semifinal games that the server cannot detect.
+  Relabel in `Admin.vue` during phase 4; the convention is documented on `FinalsBracket` until then.
 - `node_modules` and `dist` are tracked in git; a `chore/` branch should untrack `node_modules` and decide on `dist`.
-- The `.no-mistakes.yaml` on this branch is not honored until it merges to `main`; the first gated push runs with defaults.
+- The Dockerfile builds on Node 18 while CI and the gate use Node 20; move the Dockerfile to 20 in the same `chore/` branch.
+- The README documents only the Mongo URI; it also needs `JWT_SECRET`, `ADMIN_USER_ID`, and the two scripts, with CLAUDE.md reduced to a pointer.
+
+## Review follow-up (2026-11-03)
+
+The gate's review of PR 1 raised eight findings; four are fixed on `fix/review-findings`, the rest are recorded as open items above.
+
+- `FinalsBracket.teams` documents the played-order convention.
+- `TournamentGameService.findBefore` removed; it returns with its caller in phase 3.
+- Tracked-year rule: `replaceYear` with no games removes only that source's rows, and the backfill treats a year as tracked only when its results derive at least one game, so a blank past year saved from Admin can no longer wipe its backfilled history.
+- Stale 2025 placeholder comments in the seed script and the converter's header corrected.
 
 ## Phase 1 as built (2026-11-03)
 

@@ -1,7 +1,8 @@
 // src/scripts/convertKaggleGames.ts
 //
 // One-time conversion of Kaggle's March Machine Learning Mania files into
-// src/data/historicalGames.json. Download MNCAATourneyCompactResults.csv,
+// src/data/historical-games.json (the basename differs from historicalGames.ts
+// on purpose; see that module). Download MNCAATourneyCompactResults.csv,
 // MNCAATourneySeeds.csv and MSeasons.csv from the competition into a
 // directory and point this script at it:
 //
