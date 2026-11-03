@@ -17,7 +17,7 @@ Each of the three is its own git repo under `~/code/buster`; `docker-compose.yml
 - Every route is JWT-protected by default (`server.auth.default('jwt')`).
   Anything that writes tournament data or games calls `assertAdmin`.
   Admin is a single user id in `ADMIN_USER_ID`; there is no role model.
-- Pure algorithm modules (`gameDerivation`, and the odds and simulation modules that follow) import nothing from `mongodb` or `@hapi`.
+- Pure algorithm modules (`gameDerivation`, `odds`, and the simulation module that follows) import nothing from `mongodb` or `@hapi`.
   Mongo access lives in `*Service.ts` classes in `src/controllers/`; routes stay thin.
 - Seed keys are `e1`..`e16`, `m1`..`m16`, `s1`..`s16`, `w1`..`w16`.
   Round-of-64 pairing order is `ROUND_OF_64_ORDER` in `gameDerivation.ts`.
@@ -35,6 +35,7 @@ npm test                                            # jest, no database needed
 npx tsc --noEmit                                    # the lint step
 npm run rebuild-games                               # re-derive tournamentGames from tournamentData
 npm run backfill-games                              # load src/data/historical-games.json for untracked years
+npx ts-node src/scripts/backtestOdds.ts             # score the odds model on held-out seasons
 ```
 
 ## Branches, commits, and the gate

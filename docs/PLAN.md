@@ -5,17 +5,18 @@ This file holds the plan, the status, and one "as built" record per phase.
 
 ## Start here
 
-Phases 1 and 2 are on `main` (PR 1, merged 2026-11-03); see the "as built" records at the end for what was verified.
-The review findings from that PR are addressed on `fix/review-findings` (see "Review follow-up" below).
-Phases 3 and 4 are specified below and not started.
+Phases 1 and 2 are on `main` (PRs 1 and 2, merged 2026-11-03); see the "as built" records at the end for what was verified.
+Phase 3 is built on `feat/odds-model`.
+Phase 4 is specified below and not started.
 
 ```bash
 cd ~/code/buster && docker compose up -d
 cd ~/code/buster/brackets
-npm test                 # expect 27 passing
+npm test                 # expect 38 passing
 npx tsc --noEmit         # expect no output
 npm run rebuild-games    # re-derive tournamentGames from tournamentData
 npm run backfill-games   # load 1985 to 2024 from src/data/historical-games.json
+npx ts-node src/scripts/backtestOdds.ts   # score the odds model on held-out seasons
 ```
 
 ## The problem
@@ -66,18 +67,24 @@ Unique index on `(year, round, regionA, seedA)`.
   7 vs 10 is 160 less the 2021 Oregon v VCU no-contest; the hand table counts it and has one other result the wrong way.
   Cross-checked against the original sports-reference scrape: over its 22 completely captured seasons, every per-season matchup record agrees with the JSON.
 
-### Phase 3: odds module
+### Phase 3: odds module (built)
 
-Pure function from games with `year < target` to a seed-vs-seed probability table, so a tournament never informs its own odds and any past year can be backtested.
-Replace the hard "more than 20 games" cutoff and the stepwise seed-gap fallback with shrinkage toward a logistic fit on seed gap.
-Same-seed matchups are 50/50 by symmetry and excluded from the fit.
-Concrete fix: 1 vs 12 is 20-0 today, so a 12 can never beat a 1 in the sim; shrinkage puts it near 90 percent.
+- `src/controllers/odds.ts`: pure `buildOdds(games, { priorStrength })` returning an `OddsTable` with `probability(seedA, seedB)` for every pairing and 0.5 for equal seeds.
+  A Bradley-Terry fit over the 16 seeds (minorization-maximization, one virtual win and loss per seed against a fixed dummy so no seed is ever infinitely weak) gives every pairing a prior, including ones that never happened.
+  Each pairing's observed record is shrunk toward that prior as if the fit were worth `priorStrength` extra games.
+- Prior strength chosen by `src/scripts/backtestOdds.ts`: for each season 2000 to 2025 the table is built from earlier games and scored on that season's games.
+  Log loss: legacy step rule 0.5546, raw records with prior fallback 0.5756, fit alone 0.5504, shrinkage 0.5518 (5), 0.5512 (10), 0.5510 (20), 0.5508 (40), 0.5507 (80).
+  Everything from 10 up is within a thousandth of the fit alone, inside the noise of 1555 games; 80 is the default as the best finite value, keeping the record meaningful for pairings that recur yearly.
+  Run twice, identical output.
+- `OddsService.forYear(year)` builds the table from `TournamentGameService.findBefore(year)` (back with its caller), and `GET /odds?year=` returns it to any signed-in user.
+- Concrete changes against the old hand table for 2026: 1 v 12 is 89 percent instead of 100; 2 v 11 is 74 instead of 80; 1 v 9 is 88 instead of 93; 8 v 9 is 50 instead of 48; 6 v 15 and 1 v 15, never played, are 85 and 95 instead of the step rule's 80 and 85.
+- Also on this branch: the backfill treats a year whose results do not derive as tracked and reports it instead of aborting (PR 2's review warning).
 
 ### Phase 4: simulate endpoint and UI switch
 
 `POST /brackets/simulate` with year, favorite team and boost returns a `StructuredBracket`; seedable RNG so two runs on one seed diff clean.
 `Builder.vue` keeps the region-by-region reveal and drops the simulation code and the odds table.
-Decision taken: server-side rather than a `GET /odds` endpoint, because the algorithm is the one piece worth testing and jest lives here.
+Decision taken: the simulation runs server-side rather than in the UI from the `GET /odds` table, because the algorithm is the one piece worth testing and jest lives here.
 Install the no-mistakes gate in `ui/` when this phase starts.
 
 ## Open items
@@ -91,12 +98,29 @@ Install the no-mistakes gate in `ui/` when this phase starts.
 
 ## Review follow-up (2026-11-03)
 
-The gate's review of PR 1 raised eight findings; four are fixed on `fix/review-findings`, the rest are recorded as open items above.
+The gate's review of PR 1 raised eight findings: five fixed on `fix/review-findings` (PR 2), two recorded as open items above (tracked dist, Node version), one accepted as a tradeoff (results and games are written without a transaction; any re-save or rebuild repairs a partial write).
+PR 2's review added one: the backfill's tracked-year check could abort the whole load on an inconsistent year; fixed on `feat/odds-model` by treating such a year as tracked and reporting it.
 
 - `FinalsBracket.teams` documents the played-order convention.
-- `TournamentGameService.findBefore` removed; it returns with its caller in phase 3.
+- `TournamentGameService.findBefore` removed; it came back with its caller `OddsService.forYear` in phase 3.
 - Tracked-year rule: `replaceYear` with no games removes only that source's rows, and the backfill treats a year as tracked only when its results derive at least one game, so a blank past year saved from Admin can no longer wipe its backfilled history.
 - Stale 2025 placeholder comments in the seed script and the converter's header corrected.
+
+## Phase 3 as built (2026-11-03)
+
+Verified against the local compose stack with the backfilled collection:
+
+- `GET /odds?year=2026` on the rebuilt container returns 16 strengths and 120 pairings built from 2519 games before 2026; `1vs16` reports the record 158-2 and the same probabilities the pure comparison printed.
+- Backtest run twice, byte-identical.
+
+### Phase gate - as built
+
+1. **Test coverage.** 38 jest tests (11 new): the Bradley-Terry fit (ordering, equal records, determinism, seed range), `buildOdds` (120 pairings, symmetry, prior fallback for unplayed pairings, prior weight as extra games, prior-only limit, negative strength rejected, sanity on the real history including the 1 v 12 bound and monotonic ordering), and `GET /odds` (401, 400 on a missing or bad year, 200 with the table built from games before the year).
+   Gaps: `OddsService.forYear` is a two-line composition verified only live; `backtestOdds.ts` is verified by its run-twice diff.
+2. **DRY.** The empirical counts come from `seedRecords`, the key format from `matchupKey`; the legacy rule exists only inside the backtest script as the baseline.
+3. **Modularity.** `odds.ts` has type-only imports and no `mongodb` or `@hapi`; the service composes it with the games query; the route only shapes the response.
+4. **Orthogonality.** The route exposes `priorStrength` and the per-pairing record, prior and probability so the UI can explain a pick without re-deriving anything; the response shape is the coupling phase 4 will consume.
+5. **Branch and production guard.** All work on `feat/odds-model`; `main` untouched; only the local compose Mongo was read.
 
 ## Phase 1 as built (2026-11-03)
 

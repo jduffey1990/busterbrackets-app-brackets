@@ -50,6 +50,17 @@ export class TournamentGameService {
     }
   }
 
+  /** Games played before `year`: the history that year's odds may draw on. */
+  public static async findBefore(year: number): Promise<TournamentGame[]> {
+    try {
+      const collection = await this.collection();
+      return await collection.find({ year: { $lt: year } }).sort({ year: 1 }).toArray();
+    } catch (error) {
+      console.error(`Failed to fetch tournament games before ${year}:`, error);
+      throw error;
+    }
+  }
+
   public static async countByYear(): Promise<Record<number, number>> {
     try {
       const collection = await this.collection();
