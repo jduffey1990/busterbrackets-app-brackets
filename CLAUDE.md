@@ -35,6 +35,7 @@ npm test                                            # jest, no database needed
 npx tsc --noEmit                                    # the lint step
 npm run rebuild-games                               # re-derive tournamentGames from tournamentData
 npm run backfill-games                              # load src/data/historical-games.json for untracked years
+npx ts-node src/scripts/backtestOdds.ts             # score the odds model on held-out seasons
 ```
 
 ## Branches, commits, and the gate
