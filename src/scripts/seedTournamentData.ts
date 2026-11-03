@@ -43,10 +43,9 @@ const teams2025: Record<string, string> = {
   w13: "Grand Canyon", w14: "UNCW", w15: "Omaha", w16: "Norfolk St.",
 };
 
-// 2025 actual tournament results (from the old bracketFinalYears["2025"])
-// Converted to structured format.
-// NOTE: The results from bracketFinalYears["2025"] appear to be partial/complete.
-// You can update these via the admin page as the tournament progresses.
+// 2025 official results, converted from the old bracketFinalYears["2025"].
+// Verified game by game against the Kaggle-derived 2025 rows in
+// src/data/historical-games.json: all 63 games and winners agree.
 const results2025 = {
   east: {
     round32: ["e1", "e9", "e5", "e4", "e6", "e3", "e7", "e2"],
@@ -63,14 +62,14 @@ const results2025 = {
   south: {
     round32: ["s1", "s9", "s5", "s4", "s6", "s3", "s10", "s2"],
     sweet16: ["s1", "s5", "s6", "s2"],
-    elite8: ["s1", "s2"],    // NOTE: bracketFinalYears["2025"] was truncated in project knowledge
-    regionChamp: "s1",        // placeholder — update via admin if different
+    elite8: ["s1", "s2"],
+    regionChamp: "s1",
   },
   west: {
     round32: ["w1", "w8", "w12", "w4", "w11", "w3", "w10", "w2"],
     sweet16: ["w1", "w4", "w3", "w10"],
     elite8: ["w1", "w3"],
-    regionChamp: "w1",        // placeholder — update via admin if different
+    regionChamp: "w1",
   },
   finals: {
     // Ordered as the 2025 semifinals were played (Florida v Auburn,

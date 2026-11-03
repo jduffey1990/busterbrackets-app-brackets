@@ -20,8 +20,13 @@ export interface RegionBracket {
 }
 
 export interface FinalsBracket {
+    // The four region champions in the order the semifinals are PLAYED, not
+    // in region order: teams[0] v teams[1] is one game and teams[2] v teams[3]
+    // the other. semifinals[i] is the winner of pair i. Entering champions in
+    // region order with the right two winners cannot be detected server-side
+    // and stores two wrong semifinal games.
     teams: string[];        // 4 region champs entering Final Four
-    semifinals: string[];   // 2 semifinal winners
+    semifinals: string[];   // 2 semifinal winners, one per pair above
     champion: string;       // tournament champion
 }
 

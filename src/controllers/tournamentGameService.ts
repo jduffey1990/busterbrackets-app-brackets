@@ -25,12 +25,20 @@ export class TournamentGameService {
    * Replace every game stored for `year` with `games`. Results are edited in
    * place as a tournament progresses (and corrected after), so the year is
    * always rewritten whole rather than merged. Returns the number stored.
+   *
+   * A year counts as tracked only once it derives at least one game. With an
+   * empty `games` (results not entered yet, or a past year created in Admin
+   * and saved blank) only rows of this `source` are removed, so a backfilled
+   * year keeps its history until real results replace it.
    */
   public static async replaceYear(year: number, games: DerivedGame[], source: GameSource = 'structured'): Promise<number> {
     try {
       const collection = await this.collection();
+      if (games.length === 0) {
+        await collection.deleteMany({ year, source });
+        return 0;
+      }
       await collection.deleteMany({ year });
-      if (games.length === 0) return 0;
 
       const now = new Date();
       const docs: TournamentGame[] = games.map((g) => ({ _id: new ObjectId(), ...g, source, createdAt: now }));
@@ -38,17 +46,6 @@ export class TournamentGameService {
       return result.insertedCount;
     } catch (error) {
       console.error(`Failed to replace tournament games for ${year}:`, error);
-      throw error;
-    }
-  }
-
-  /** Games played before `year`: the history a given year's odds may draw on. */
-  public static async findBefore(year: number): Promise<TournamentGame[]> {
-    try {
-      const collection = await this.collection();
-      return await collection.find({ year: { $lt: year } }).sort({ year: 1 }).toArray();
-    } catch (error) {
-      console.error(`Failed to fetch tournament games before ${year}:`, error);
       throw error;
     }
   }

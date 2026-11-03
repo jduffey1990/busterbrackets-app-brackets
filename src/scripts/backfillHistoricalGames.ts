@@ -1,8 +1,10 @@
 // src/scripts/backfillHistoricalGames.ts
 //
 // Loads src/data/historical-games.json into tournamentGames for every year
-// that has no tournamentData results of its own. Years the app tracks itself
-// are left to rebuildTournamentGames.ts; this script never overwrites them.
+// that has no tournamentData results of its own. A year is tracked once its
+// results derive at least one game; a blank bracket saved from Admin for a
+// past year does not count. Tracked years are left to
+// rebuildTournamentGames.ts; this script never overwrites them.
 // Idempotent: a backfilled year is replaced whole on each run.
 //
 // Usage:
@@ -13,6 +15,7 @@ import dotenv from 'dotenv';
 import { DatabaseService } from '../controllers/mongodb.service';
 import { TournamentData } from '../models/tournamentData';
 import { TournamentGameService } from '../controllers/tournamentGameService';
+import { gamesFromBracket } from '../controllers/gameDerivation';
 import { historicalGames } from '../data/historicalGames';
 dotenv.config();
 
@@ -21,11 +24,13 @@ async function backfill() {
   try {
     await dbService.connect();
     const db = dbService.getDb();
-    const tracked = await db
+    const seasons = await db
       .collection<TournamentData>('tournamentData')
-      .find({ results: { $ne: null } }, { projection: { year: 1 } })
+      .find({}, { projection: { year: 1, results: 1 } })
       .toArray();
-    const trackedYears = new Set(tracked.map((t) => t.year));
+    const trackedYears = new Set(
+      seasons.filter((s) => gamesFromBracket(s.year, s.results).length > 0).map((s) => s.year),
+    );
 
     const byYear = new Map<number, ReturnType<typeof historicalGames>>();
     for (const g of historicalGames()) {
