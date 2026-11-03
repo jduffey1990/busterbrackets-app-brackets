@@ -21,7 +21,7 @@ npx ts-node src/scripts/backtestOdds.ts   # score the odds model on held-out sea
 
 ## The problem
 
-The simulation in `ui/src/views/Builder.vue` picks winners from a seed-vs-seed win/loss table.
+The simulation in `ui/src/views/Builder.vue` picked winners from a seed-vs-seed win/loss table (moved server-side in phase 4).
 That table was hand-maintained in `ui/src/utils/bracketStruc.js`; a Python scrape of sports-reference was meant to regenerate it each year.
 The scrape never fed the app: it missed about 500 games (region ids changed over the years, several years returned almost nothing) and mis-counted same-seed games.
 The hand table was correct through 2025, so the real annual cost was a human re-deriving every matchup record by hand.
@@ -98,8 +98,6 @@ Decision taken: the simulation runs server-side rather than in the UI from the `
 ## Open items
 
 - The 2025 results, both the Admin-entered copy and the seed script's data, were checked game by game against the Kaggle 2025 rows: all 63 agree.
-- The Admin page labels the four finalists only as region champs 1 to 4, with no hint that slots 1 and 2 form one semifinal; entering them in region order stores two wrong semifinal games that the server cannot detect.
-  Relabel in `Admin.vue` during phase 4; the convention is documented on `FinalsBracket` until then.
 - `node_modules` and `dist` are tracked in git; a `chore/` branch should untrack `node_modules` and decide on `dist`.
 - The Dockerfile builds on Node 18 while CI and the gate use Node 20; move the Dockerfile to 20 in the same `chore/` branch.
 - The README documents only the Mongo URI; it also needs `JWT_SECRET`, `ADMIN_USER_ID`, and the two scripts, with CLAUDE.md reduced to a pointer.
