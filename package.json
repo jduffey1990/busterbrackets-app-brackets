@@ -10,7 +10,8 @@
     "dev": "nodemon --exec ts-node src/app.ts",
     "seed": "npm run build && node dist/scripts/seedBrackets.js",
     "docker-seed": "docker compose run --rm brackets npm run seed",
-    "rebuild-games": "npm run build && node dist/scripts/rebuildTournamentGames.js"
+    "rebuild-games": "npm run build && node dist/scripts/rebuildTournamentGames.js",
+    "backfill-games": "npm run build && node dist/scripts/backfillHistoricalGames.js"
   },
   "keywords": [
     "node",
