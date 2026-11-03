@@ -4,6 +4,7 @@ import { tournamentDataRoutes } from './tournamentDataRoutes';
 import { breakdownRoutes } from './breakdownRoutes';
 import { newsRoutes } from './newsRoutes';
 import { oddsRoutes } from './oddsRoutes';
+import { simulationRoutes } from './simulationRoutes';
 
 export default [
   ...bracketRoutes,
@@ -11,4 +12,5 @@ export default [
   ...breakdownRoutes,
   ...newsRoutes,
   ...oddsRoutes,
+  ...simulationRoutes,
 ];
