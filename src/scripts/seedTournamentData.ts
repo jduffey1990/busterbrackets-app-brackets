@@ -13,6 +13,8 @@ import { ObjectId } from 'mongodb';
 import { DatabaseService } from '../controllers/mongodb.service';
 import dotenv from 'dotenv';
 import { teams2026, results2026 } from '../data/tournament2026';
+import { gamesFromBracket } from '../controllers/gameDerivation';
+import { TournamentGameService } from '../controllers/tournamentGameService';
 dotenv.config();
 
 const teams2025: Record<string, string> = {
@@ -109,7 +111,8 @@ async function seed() {
         updatedAt: now,
       });
 
-      console.log(`✅ Seeded ${year} tournament data successfully.`);
+      const games = await TournamentGameService.replaceYear(year, gamesFromBracket(year, results));
+      console.log(`✅ Seeded ${year} tournament data successfully (${games} games).`);
     }
   } catch (error) {
     console.error('Failed to seed tournament data:', error);

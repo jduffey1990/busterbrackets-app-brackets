@@ -2,6 +2,8 @@
 import { ObjectId } from 'mongodb';
 import { TournamentData, StructuredBracket } from '../models/tournamentData';
 import { DatabaseService } from './mongodb.service';
+import { gamesFromBracket } from './gameDerivation';
+import { TournamentGameService } from './tournamentGameService';
 
 export class TournamentDataService {
 
@@ -104,8 +106,13 @@ export class TournamentDataService {
 
   /**
    * Update tournament results (can be partial — called as games complete).
+   * The individual games are derived from the results and stored alongside,
+   * so the odds history grows with no step beyond entering results.
+   * Throws BracketConsistencyError (before writing anything) when a winner
+   * did not play in its game.
    */
   public static async updateResults(year: number, results: StructuredBracket): Promise<TournamentData | null> {
+    const games = gamesFromBracket(year, results);
     try {
       const db = DatabaseService.getInstance().getDb();
       const collection = db.collection<TournamentData>('tournamentData');
@@ -115,6 +122,9 @@ export class TournamentDataService {
         { $set: { results, updatedAt: new Date() } },
         { returnDocument: 'after' }
       );
+      if (result) {
+        await TournamentGameService.replaceYear(year, games);
+      }
       return result || null;
     } catch (error) {
       console.error('Failed to update tournament results:', error);

@@ -9,5 +9,6 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
   },
-  "include": ["src"]          // <--- Tells TS to compile all .ts in 'src' folder
+  "include": ["src"],         // <--- Tells TS to compile all .ts in 'src' folder
+  "exclude": ["src/**/*.test.ts"]
 }

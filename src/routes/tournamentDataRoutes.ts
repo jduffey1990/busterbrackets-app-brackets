@@ -2,6 +2,7 @@
 import { Request, ResponseToolkit } from '@hapi/hapi';
 import { TournamentDataService } from '../controllers/tournamentDataService';
 import { StructuredBracket } from '../models/tournamentData';
+import { BracketConsistencyError } from '../controllers/gameDerivation';
 
 /**
  * Admin guard helper.
@@ -142,11 +143,18 @@ export const tournamentDataRoutes = [
       }
 
       const results = payload.results as StructuredBracket;
-      const data = await TournamentDataService.updateResults(payload.year, results);
-      if (!data) {
-        return h.response({ error: `No tournament data found for ${payload.year}` }).code(404);
+      try {
+        const data = await TournamentDataService.updateResults(payload.year, results);
+        if (!data) {
+          return h.response({ error: `No tournament data found for ${payload.year}` }).code(404);
+        }
+        return data;
+      } catch (error) {
+        if (error instanceof BracketConsistencyError) {
+          return h.response({ error: error.message }).code(400);
+        }
+        throw error;
       }
-      return data;
     },
   },
 ];
