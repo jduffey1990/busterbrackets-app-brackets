@@ -6,13 +6,13 @@ This file holds the plan, the status, and one "as built" record per phase.
 ## Start here
 
 Phases 1 and 2 are on `main` (PRs 1 and 2, merged 2026-11-03); see the "as built" records at the end for what was verified.
-Phase 3 is built on `feat/odds-model`.
-Phase 4 is specified below and not started.
+Phase 3 is on `main` (PR 3).
+Phase 4 is built on `feat/simulate-endpoint` (brackets) and `feat/server-simulation` (ui, stacked on `ui-revamp`).
 
 ```bash
 cd ~/code/buster && docker compose up -d
 cd ~/code/buster/brackets
-npm test                 # expect 38 passing
+npm test                 # expect 49 passing
 npx tsc --noEmit         # expect no output
 npm run rebuild-games    # re-derive tournamentGames from tournamentData
 npm run backfill-games   # load 1985 to 2024 from src/data/historical-games.json
@@ -80,12 +80,20 @@ Unique index on `(year, round, regionA, seedA)`.
 - Concrete changes against the old hand table for 2026: 1 v 12 is 89 percent instead of 100; 2 v 11 is 74 instead of 80; 1 v 9 is 88 instead of 93; 8 v 9 is 50 instead of 48; 6 v 15 and 1 v 15, never played, are 85 and 95 instead of the step rule's 80 and 85.
 - Also on this branch: the backfill treats a year whose results do not derive as tracked and reports it instead of aborting (PR 2's review warning).
 
-### Phase 4: simulate endpoint and UI switch
+### Phase 4: simulate endpoint and UI switch (built)
 
-`POST /brackets/simulate` with year, favorite team and boost returns a `StructuredBracket`; seedable RNG so two runs on one seed diff clean.
-`Builder.vue` keeps the region-by-region reveal and drops the simulation code and the odds table.
 Decision taken: the simulation runs server-side rather than in the UI from the `GET /odds` table, because the algorithm is the one piece worth testing and jest lives here.
-Install the no-mistakes gate in `ui/` when this phase starts.
+
+- `src/controllers/simulation.ts`: pure `simulateBracket(odds, { favorite, boost, random })` with the same region order, round-of-64 pairing and Final Four pairing (east v midwest, south v west) the client produced, so saved brackets keep their shape.
+  `rngFromSeed` is a small deterministic generator (FNV-1a into mulberry32), so a run is reproducible from its seed string.
+- `SimulationService.simulate({ year, favorite, boost, seed })` builds the year's odds, draws a random seed when none is given, and returns `{ year, seed, priorStrength, bracket }`.
+- `POST /simulate-bracket` (any signed-in user) validates year, favorite as a seed key, boost 0 to 100, and seed length; route naming follows the existing flat `/create-bracket` style.
+- ui `Builder.vue`: one POST, then the same region-by-region reveal; the client odds table, `fixRecords` and the simulation code are gone from `bracketStruc.js` and the Builder; the "how it works" copy describes the new model.
+  The favorite is sent as its seed key, looked up from the loaded team map.
+- ui `Admin.vue`: the four Final Four slots are labeled "Semifinal 1: team A / team B" and "Semifinal 2: team A / team B" with a hint, closing the PR 1 finding.
+- ui housekeeping: an `.eslintrc.cjs` (the repo's lint had no config and failed on its own config files) and the four pre-existing lint errors fixed; the empty chip that rendered under "Pick your team" before any selection fixed (`selectedTeam` starts as `null`, not `""`).
+- no-mistakes gate installed in `ui/` with its own deploy key, `.no-mistakes.yaml` (yarn install, eslint, yarn build), `ci.yml`, `CLAUDE.md`, and a `main` ruleset on GitHub.
+- Not done: the saved bracket does not store its simulation seed; adding it means a `Bracket` model and `create-bracket` change, left for a later phase if replays matter.
 
 ## Open items
 
@@ -105,6 +113,26 @@ PR 2's review added one: the backfill's tracked-year check could abort the whole
 - `TournamentGameService.findBefore` removed; it came back with its caller `OddsService.forYear` in phase 3.
 - Tracked-year rule: `replaceYear` with no games removes only that source's rows, and the backfill treats a year as tracked only when its results derive at least one game, so a blank past year saved from Admin can no longer wipe its backfilled history.
 - Stale 2025 placeholder comments in the seed script and the converter's header corrected.
+
+## Phase 4 as built (2026-11-03)
+
+Verified against the local compose stack, brackets and ui images rebuilt from the branches:
+
+- `POST /simulate-bracket` live: 401 without a token, 400 on a team name instead of a seed key, 200 with a 16-hex seed, a replay with the returned seed byte-identical, favorite `w12` with boost 100 is champion, and 200 random runs crown a 1, 2 or 3 seed 181 times.
+- Playwright against the real app at 1280 and 390 widths, logged in as a seeded user: no empty chip and no progress list before a run, the old odds copy gone and the new copy present, a boosted Michigan run returns 200 from the simulation and the save and crowns `m1`, a plain run and a mobile run save too, no horizontal scroll at 390, no page or console errors.
+  Each saved bracket derives 63 games; credits decrement once per run.
+  Screenshots in the session scratchpad under `screens/`.
+- Admin finals relabel verified by inspection only: the admin user id in `.env` is not a local user, so the page could not be driven.
+
+### Phase gate - as built
+
+1. **Test coverage.** 49 jest tests (11 new): the seeded generator (determinism, range, mean), `simulateBracket` (complete and self-consistent bracket, replay by seed, frequencies follow the odds over 2000 runs, a 100-point boost crowns the favorite, a boost moves the favorite by that many points, bad favorite or boost rejected), and `POST /simulate-bracket` (401, validation of every field, 200 shape from games before the year, replay and favorite).
+   Gaps: `SimulationService` is a composition verified only live; the ui has no unit runner, so the Builder is covered by the Playwright drive above and nothing automated in the repo.
+2. **DRY.** The route reuses `SEED_KEY` from the simulation module; the client no longer carries any odds or simulation code; the seed-key regex now exists in `gameDerivation.ts` (parse with region) and `simulation.ts` (seed only), noted as the one duplication worth folding when a third user appears.
+3. **Modularity.** `simulation.ts` has type-only model imports and no `mongodb` or `@hapi`; the service composes odds and simulation; the route validates and shapes.
+4. **Orthogonality.** The Final Four pairing order in `simulation.ts` must match what `Bracket.vue` renders by chunks of two and what `compareBrackets` compares positionally; both are the pre-existing client convention and are noted in the module header.
+   The ui gate config and `ci.yml` must run the same checks; the Node version appears in the ui `Dockerfile`, `ci.yml`, and the nvm path in `.no-mistakes.yaml`.
+5. **Branch and production guard.** brackets work on `feat/simulate-endpoint`, ui work on `feat/server-simulation`; both `main` branches untouched; only the local compose stack was written.
 
 ## Phase 3 as built (2026-11-03)
 
