@@ -3,7 +3,8 @@
 // Seeds the tournamentData collection with the 2025 bracket that was
 // previously hardcoded in the frontend's bracketStruc.js.
 //
-// Also seeds the 2025 tournament results from bracketFinalYears["2025"].
+// Also seeds the 2025 tournament results from bracketFinalYears["2025"],
+// and the full 2026 field and official results.
 //
 // Usage:
 //   npx ts-node src/scripts/seedTournamentData.ts
@@ -11,6 +12,7 @@
 import { ObjectId } from 'mongodb';
 import { DatabaseService } from '../controllers/mongodb.service';
 import dotenv from 'dotenv';
+import { teams2026, results2026 } from '../data/tournament2026';
 dotenv.config();
 
 const teams2025: Record<string, string> = {
@@ -69,11 +71,18 @@ const results2025 = {
     regionChamp: "w1",        // placeholder — update via admin if different
   },
   finals: {
-    teams: ["e1", "m1", "s1", "w1"],
-    semifinals: ["e1", "w1"],  // placeholder — update via admin
-    champion: "w1",            // placeholder — update via admin
+    // Ordered as the 2025 semifinals were played (Florida v Auburn,
+    // Duke v Houston) so each pair of teams is one game.
+    teams: ["w1", "s1", "e1", "m1"],
+    semifinals: ["w1", "m1"],  // Florida 79-73 Auburn, Houston 70-67 Duke
+    champion: "w1",            // Florida 65-63 Houston
   },
 };
+
+const seasons = [
+  { year: 2025, teams: teams2025, results: results2025 },
+  { year: 2026, teams: teams2026, results: results2026 },
+];
 
 async function seed() {
   const dbService = DatabaseService.getInstance();
@@ -82,25 +91,26 @@ async function seed() {
     const db = dbService.getDb();
     const collection = db.collection('tournamentData');
 
-    // Check if 2025 already exists
-    const existing = await collection.findOne({ year: 2025 });
-    if (existing) {
-      console.log('Tournament data for 2025 already exists. Skipping.');
-      return;
+    for (const { year, teams, results } of seasons) {
+      // Additive: never overwrite a year that already exists
+      const existing = await collection.findOne({ year });
+      if (existing) {
+        console.log(`Tournament data for ${year} already exists. Skipping.`);
+        continue;
+      }
+
+      const now = new Date();
+      await collection.insertOne({
+        _id: new ObjectId(),
+        year,
+        teams,
+        results,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      console.log(`✅ Seeded ${year} tournament data successfully.`);
     }
-
-    const now = new Date();
-    await collection.insertOne({
-      _id: new ObjectId(),
-      year: 2025,
-      teams: teams2025,
-      results: results2025,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    console.log('✅ Seeded 2025 tournament data successfully.');
-    console.log('   ⚠️  Results are partially placeholder — update via admin page.');
   } catch (error) {
     console.error('Failed to seed tournament data:', error);
   } finally {
