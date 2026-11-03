@@ -84,7 +84,7 @@ Unique index on `(year, round, regionA, seedA)`.
 
 `POST /brackets/simulate` with year, favorite team and boost returns a `StructuredBracket`; seedable RNG so two runs on one seed diff clean.
 `Builder.vue` keeps the region-by-region reveal and drops the simulation code and the odds table.
-Decision taken: server-side rather than a `GET /odds` endpoint, because the algorithm is the one piece worth testing and jest lives here.
+Decision taken: the simulation runs server-side rather than in the UI from the `GET /odds` table, because the algorithm is the one piece worth testing and jest lives here.
 Install the no-mistakes gate in `ui/` when this phase starts.
 
 ## Open items
@@ -102,7 +102,7 @@ The gate's review of PR 1 raised eight findings: five fixed on `fix/review-findi
 PR 2's review added one: the backfill's tracked-year check could abort the whole load on an inconsistent year; fixed on `feat/odds-model` by treating such a year as tracked and reporting it.
 
 - `FinalsBracket.teams` documents the played-order convention.
-- `TournamentGameService.findBefore` removed; it returns with its caller in phase 3.
+- `TournamentGameService.findBefore` removed; it came back with its caller `OddsService.forYear` in phase 3.
 - Tracked-year rule: `replaceYear` with no games removes only that source's rows, and the backfill treats a year as tracked only when its results derive at least one game, so a blank past year saved from Admin can no longer wipe its backfilled history.
 - Stale 2025 placeholder comments in the seed script and the converter's header corrected.
 
