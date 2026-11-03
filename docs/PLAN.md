@@ -44,7 +44,7 @@ Unique index on `(year, round, regionA, seedA)`.
 ### Phase 1: games collection and derivation (built)
 
 - `src/controllers/gameDerivation.ts`: pure `gamesFromBracket(year, bracket)`; partial results yield fewer games; an impossible winner throws `BracketConsistencyError`.
-- `src/controllers/tournamentGameService.ts`: `replaceYear`, `findBefore`, `countByYear`.
+- `src/controllers/tournamentGameService.ts`: `replaceYear`, `countByYear`.
 - `TournamentDataService.updateResults` derives before writing and stores the games after; the route returns 400 on a consistency error.
 - `src/scripts/rebuildTournamentGames.ts` (`npm run rebuild-games`) re-derives every year; the seed script writes games for the years it inserts.
 - 2026 field and results moved to `src/data/tournament2026.ts`, shared by the seed script and the tests.
@@ -60,7 +60,7 @@ Unique index on `(year, round, regionA, seedA)`.
 - `src/scripts/convertKaggleGames.ts <dir>` writes `src/data/historical-games.json`: 2519 games, 1985 to 2025, as compact rows of our own derived facts.
   Kaggle's CSVs are not committed; the download needs a Kaggle account, an API token at `~/.kaggle/access_token`, and accepting the competition rules once.
 - `src/controllers/seedRecords.ts`: the seed-vs-seed win/loss aggregation, shared with phase 3.
-- `src/scripts/backfillHistoricalGames.ts` (`npm run backfill-games`) loads the JSON for every year without `tournamentData` results and never touches tracked years.
+- `src/scripts/backfillHistoricalGames.ts` (`npm run backfill-games`) loads the JSON for every untracked year (the rule is under "Data model") and never touches tracked years.
 - Acceptance (`src/data/historicalGames.test.ts`): the JSON reproduces the hand table in `ui/src/utils/bracketStruc.js` except two entries where the hand table is wrong.
   6 vs 11 is structurally 160 games over 40 seasons; the hand table has 156.
   7 vs 10 is 160 less the 2021 Oregon v VCU no-contest; the hand table counts it and has one other result the wrong way.
