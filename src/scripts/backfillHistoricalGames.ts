@@ -15,7 +15,7 @@ import dotenv from 'dotenv';
 import { DatabaseService } from '../controllers/mongodb.service';
 import { TournamentData } from '../models/tournamentData';
 import { TournamentGameService } from '../controllers/tournamentGameService';
-import { gamesFromBracket } from '../controllers/gameDerivation';
+import { gamesFromBracket, BracketConsistencyError } from '../controllers/gameDerivation';
 import { historicalGames } from '../data/historicalGames';
 dotenv.config();
 
@@ -28,9 +28,21 @@ async function backfill() {
       .collection<TournamentData>('tournamentData')
       .find({}, { projection: { year: 1, results: 1 } })
       .toArray();
-    const trackedYears = new Set(
-      seasons.filter((s) => gamesFromBracket(s.year, s.results).length > 0).map((s) => s.year),
-    );
+    // A year with admin-entered results is tracked once they derive at least
+    // one game. Results that do not derive at all (inconsistent, or malformed
+    // by an edit outside the API) are also treated as tracked: they belong to
+    // the admin, so the conservative choice is to leave that year alone and
+    // say so rather than abort the whole load.
+    const trackedYears = new Set<number>();
+    for (const season of seasons) {
+      try {
+        if (gamesFromBracket(season.year, season.results).length > 0) trackedYears.add(season.year);
+      } catch (error) {
+        if (!(error instanceof BracketConsistencyError) && !(error instanceof TypeError)) throw error;
+        console.error(`${season.year}: results do not derive (${(error as Error).message}), left alone`);
+        trackedYears.add(season.year);
+      }
+    }
 
     const byYear = new Map<number, ReturnType<typeof historicalGames>>();
     for (const g of historicalGames()) {
