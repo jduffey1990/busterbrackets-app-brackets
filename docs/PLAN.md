@@ -103,7 +103,7 @@ Verified against the local compose stack (brackets image rebuilt from this branc
 3. **Modularity.** `gameDerivation.ts` has type-only imports and nothing from `mongodb` or `@hapi`; Mongo stays in the two services; the route only maps errors.
 4. **Orthogonality.** New coupling: saving tournament results now writes `tournamentGames` (noted in the `updateResults` docstring).
    The `.no-mistakes.yaml` commands and `ci.yml` run the same two checks and the nvm path appears in the yaml only; both are in the CLAUDE.md list.
-5. **Branch and production guard.** All work on `feat/historical-odds`, uncommitted; `main` untouched; only the local compose Mongo was written.
+5. **Branch and production guard.** All work on `feat/historical-odds`; `main` untouched; only the local compose Mongo was written.
 
 ## Phase 2 as built (2026-11-03)
 
@@ -122,4 +122,4 @@ Verified against the local compose Mongo:
 3. **Modularity.** `kaggleGames.ts` and `seedRecords.ts` have type-only imports and no `mongodb` or `@hapi`; only the backfill script touches the database.
 4. **Orthogonality.** The JSON's basename must differ from the loader module's (`historical-games.json` beside `historicalGames.ts`) or ts-node resolves the import to the JSON; noted in the loader.
    `resolveJsonModule` was turned on in `tsconfig.json` for that import.
-5. **Branch and production guard.** All work on `feat/historical-odds`, uncommitted; `main` untouched; only the local compose Mongo was written.
+5. **Branch and production guard.** All work on `feat/historical-odds`; `main` untouched; only the local compose Mongo was written.

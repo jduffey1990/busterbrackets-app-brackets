@@ -31,7 +31,7 @@ Each of the three is its own git repo under `~/code/buster`; `docker-compose.yml
 ```bash
 cd ~/code/buster && docker compose up -d            # mongo, users, brackets, ui
 cd ~/code/buster/brackets
-npm test                                            # jest, pure modules only
+npm test                                            # jest, no database needed
 npx tsc --noEmit                                    # the lint step
 npm run rebuild-games                               # re-derive tournamentGames from tournamentData
 npm run backfill-games                              # load src/data/historical-games.json for untracked years
