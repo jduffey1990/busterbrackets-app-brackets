@@ -1,7 +1,9 @@
 // src/routes/tournamentDataRoutes.ts
 import { Request, ResponseToolkit } from '@hapi/hapi';
+import Boom from '@hapi/boom';
 import { TournamentDataService } from '../controllers/tournamentDataService';
 import { StructuredBracket } from '../models/tournamentData';
+import { BracketConsistencyError } from '../controllers/gameDerivation';
 
 /**
  * Admin guard helper.
@@ -10,7 +12,7 @@ import { StructuredBracket } from '../models/tournamentData';
  * This avoids needing to modify the JWT payload or make cross-service calls.
  * Set ADMIN_USER_ID in your .env to your own MongoDB user _id string.
  */
-function assertAdmin(request: Request, h: ResponseToolkit): void {
+function assertAdmin(request: Request): void {
   const userId = request.auth.credentials.userId as string;
   const adminId = process.env.ADMIN_USER_ID;
 
@@ -19,7 +21,9 @@ function assertAdmin(request: Request, h: ResponseToolkit): void {
   }
 
   if (userId !== adminId) {
-    throw h.response({ error: 'Forbidden: admin access required' }).code(403).takeover();
+    // A thrown Boom is how a handler signals an HTTP error in Hapi; throwing a
+    // response object is rejected as "Cannot throw non-error object" (a 500).
+    throw Boom.forbidden('Forbidden: admin access required');
   }
 }
 
@@ -70,7 +74,7 @@ export const tournamentDataRoutes = [
     method: 'POST',
     path: '/tournament-data',
     handler: async (request: Request, h: ResponseToolkit) => {
-      assertAdmin(request, h);
+      assertAdmin(request);
 
       const payload = request.payload as any;
       if (!payload.year || !payload.teams) {
@@ -115,7 +119,7 @@ export const tournamentDataRoutes = [
     method: 'PUT',
     path: '/tournament-data/teams',
     handler: async (request: Request, h: ResponseToolkit) => {
-      assertAdmin(request, h);
+      assertAdmin(request);
 
       const payload = request.payload as any;
       if (!payload.year || !payload.teams) {
@@ -134,7 +138,7 @@ export const tournamentDataRoutes = [
     method: 'PUT',
     path: '/tournament-data/results',
     handler: async (request: Request, h: ResponseToolkit) => {
-      assertAdmin(request, h);
+      assertAdmin(request);
 
       const payload = request.payload as any;
       if (!payload.year || !payload.results) {
@@ -142,11 +146,18 @@ export const tournamentDataRoutes = [
       }
 
       const results = payload.results as StructuredBracket;
-      const data = await TournamentDataService.updateResults(payload.year, results);
-      if (!data) {
-        return h.response({ error: `No tournament data found for ${payload.year}` }).code(404);
+      try {
+        const data = await TournamentDataService.updateResults(payload.year, results);
+        if (!data) {
+          return h.response({ error: `No tournament data found for ${payload.year}` }).code(404);
+        }
+        return data;
+      } catch (error) {
+        if (error instanceof BracketConsistencyError) {
+          return h.response({ error: error.message }).code(400);
+        }
+        throw error;
       }
-      return data;
     },
   },
 ];

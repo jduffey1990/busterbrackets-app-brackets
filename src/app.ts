@@ -1,53 +1,18 @@
-// app.ts 
-const Hapi = require('@hapi/hapi');
+// app.ts
 import dotenv from 'dotenv';
 
-import { AuthService } from './controllers/authService';
 import { DatabaseService } from './controllers/mongodb.service';
-import { bracketRoutes } from './routes/bracketRoutes';
-import { tournamentDataRoutes } from './routes/tournamentDataRoutes';
-import { breakdownRoutes } from './routes/breakdownRoutes';
-import { newsRoutes } from './routes/newsRoutes';
+import { createServer } from './server';
 
 dotenv.config();
-const jwtSecret = process.env.JWT_SECRET;
 
 const init = async () => {
   console.log('Initializing server...');
-  const server = Hapi.server({
-    port: 3000,
-    host: '0.0.0.0',
-    routes: {
-      cors: {
-        origin: ['http://localhost:4000', 'http://busterbrackets.com.s3-website.us-east-2.amazonaws.com', 'https://main.d2pmlcs4q5ckgp.amplifyapp.com', 'https://busterbrackets.com', 'http://busterbrackets.com'],
-        credentials: true,                 // allow cookies / Authorization headers
-        additionalHeaders: ['X-CSRFToken', 'Content-Type'] 
-      },
-    },
-  });
-  
 
-  // 1. Connect to MongoDB once
-  const dbService = DatabaseService.getInstance();
-  await dbService.connect(); // This ensures `dbService.getDb()` is ready.
+  // Connect to MongoDB once, before any route can run.
+  await DatabaseService.getInstance().connect();
 
-    await server.register(require('@hapi/jwt'));
-
-    server.auth.strategy('jwt', 'jwt', {
-    keys: jwtSecret,
-    verify: { 
-        aud: false,
-        iss: false,
-        sub: false,
-        maxAgeSec: 14400, // Tokens expire in 4 hours
-    },
-    validate: AuthService.validateToken
-    });
-
-    server.auth.default('jwt');
-
-  // 3. Register routes
-  server.route([...bracketRoutes, ...tournamentDataRoutes, ...breakdownRoutes, ...newsRoutes]);
+  const server = await createServer(process.env.JWT_SECRET);
   await server.start();
   console.log('Server running on %s', server.info.uri);
 };

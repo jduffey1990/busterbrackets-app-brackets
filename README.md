@@ -37,8 +37,7 @@ This microservice handles all bracket-related functionality for the BusterBracke
 3. **Create a `.env` file in the root:**
 
    ```
-   MONGODB_URI=mongodb://localhost:27017/brackets
-   PORT=3001
+   MONGO_URI=mongodb://localhost:27017/busterBrackets
    ```
 
 4. **Start the development server:**

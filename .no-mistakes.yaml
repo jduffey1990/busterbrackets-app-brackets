@@ -1,0 +1,40 @@
+# no-mistakes gate configuration. Honored only from the copy on main, so a
+# change here takes effect after it merges. The gate daemon runs on Jordan's
+# machine and its run worktree starts from tracked files only, so node_modules
+# is installed fresh. The daemon is a launchd process and does not inherit the
+# shell's nvm PATH, hence the explicit node bin directory on every command.
+
+agent: claude
+
+commands:
+  prepare: "PATH=/Users/jordanduffey/.nvm/versions/node/v20.19.6/bin:$PATH npm ci --prefer-offline"
+  lint: "PATH=/Users/jordanduffey/.nvm/versions/node/v20.19.6/bin:$PATH npx tsc --noEmit"
+  test: "PATH=/Users/jordanduffey/.nvm/versions/node/v20.19.6/bin:$PATH npm test -- --ci"
+
+# Compiled output is tracked in this repo; the reviewer should not read it as source.
+ignore_patterns:
+  - "dist/**"
+
+review:
+  # The reviewer may ask Jordan questions in the TUI instead of guessing intent.
+  conversation: true
+  path_instructions:
+    - path: "src/**"
+      instructions: |
+        Check every change against the invariants in CLAUDE.md. In particular:
+        every route that writes tournament data or tournament games calls
+        assertAdmin; pure algorithm modules (game derivation, odds, simulation)
+        import nothing from mongodb or @hapi; seed and rebuild scripts are
+        additive and never delete rows another collection references. A
+        violation is a blocking finding, not a suggestion.
+    - path: "docs/**"
+      instructions: |
+        Prose changes only. Do not request test coverage.
+
+pr:
+  # Keep the transcript-derived Intent section out of PR bodies.
+  publish_intent: false
+
+ci:
+  # Every CI repair goes back through review before it is published.
+  revalidate_repairs: true
