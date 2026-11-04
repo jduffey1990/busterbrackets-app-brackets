@@ -39,6 +39,8 @@ describe('POST /simulate-bracket', () => {
     expect((await post({ year: 'next' })).statusCode).toBe(400);
     expect((await post({ year: 2026, favorite: 'Duke' })).statusCode).toBe(400);
     expect((await post({ year: 2026, favorite: 'e17' })).statusCode).toBe(400);
+    expect((await post({ year: 2026, favorite: 'e01' })).statusCode).toBe(400);
+    expect((await post({ year: 2026, favorite: 7 })).statusCode).toBe(400);
     expect((await post({ year: 2026, boost: 101 })).statusCode).toBe(400);
     expect((await post({ year: 2026, boost: 'lots' })).statusCode).toBe(400);
     expect((await post({ year: 2026, seed: '' })).statusCode).toBe(400);

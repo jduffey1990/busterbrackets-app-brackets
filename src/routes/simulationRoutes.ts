@@ -1,7 +1,7 @@
 // src/routes/simulationRoutes.ts
 import { Request, ResponseToolkit } from '@hapi/hapi';
 import { SimulationService } from '../controllers/simulationService';
-import { SEED_KEY } from '../controllers/simulation';
+import { seedOf } from '../controllers/simulation';
 
 export const simulationRoutes = [
   {
@@ -15,8 +15,9 @@ export const simulationRoutes = [
       }
       const favorite = payload.favorite;
       if (favorite !== undefined && favorite !== null && favorite !== '') {
-        const seed = typeof favorite === 'string' ? parseInt((SEED_KEY.exec(favorite) ?? [])[1] ?? '', 10) : NaN;
-        if (!(seed >= 1 && seed <= 16)) {
+        try {
+          seedOf(String(favorite));
+        } catch {
           return h.response({ error: 'favorite must be a seed key like "m1"' }).code(400);
         }
       }
