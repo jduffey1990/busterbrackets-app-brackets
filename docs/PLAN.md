@@ -98,9 +98,7 @@ Decision taken: the simulation runs server-side rather than in the UI from the `
 ## Open items
 
 - The 2025 results, both the Admin-entered copy and the seed script's data, were checked game by game against the Kaggle 2025 rows: all 63 agree.
-- `node_modules` and `dist` are tracked in git; a `chore/` branch should untrack `node_modules` and decide on `dist`.
-- The Dockerfile builds on Node 18 while CI and the gate use Node 20; move the Dockerfile to 20 in the same `chore/` branch.
-- The README documents only the Mongo URI; it also needs `JWT_SECRET`, `ADMIN_USER_ID`, and the two scripts, with CLAUDE.md reduced to a pointer.
+- Closed on `chore/node20-untrack-build-readme` (2026-11-04): `node_modules` and `dist` untracked and ignored (the tracked `dist` was a stale February build of 18 files against 36 current modules, and `.dockerignore` already excluded both, so nothing built from it); Dockerfile moved to Node 20 to match CI and the gate; README documents every environment variable the service reads plus the game scripts, and CLAUDE.md points at it.
 
 ## Review follow-up (2026-11-03)
 

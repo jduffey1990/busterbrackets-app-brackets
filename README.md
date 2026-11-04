@@ -34,10 +34,12 @@ This microservice handles all bracket-related functionality for the BusterBracke
    npm install
    ```
 
-3. **Create a `.env` file in the root:**
+3. **Create a `.env` file in the root** (see Environment variables below):
 
    ```
    MONGO_URI=mongodb://localhost:27017/busterBrackets
+   JWT_SECRET=<same secret the users service signs with>
+   ADMIN_USER_ID=<Mongo _id of the account allowed to edit tournament data>
    ```
 
 4. **Start the development server:**
@@ -45,10 +47,35 @@ This microservice handles all bracket-related functionality for the BusterBracke
    npm run dev
    ```
 
-5. **Run tests:**
+5. **Run tests and the type check:**
    ```bash
    npm test
+   npx tsc --noEmit
    ```
+
+---
+
+## Environment variables
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `MONGO_URI` | yes | Mongo connection string. Defaults to `mongodb://localhost:27017/busterBrackets` when unset; Docker Compose overrides it to the `mongo` container. |
+| `JWT_SECRET` | yes | Secret used to verify the JWT issued by the users service. Must match the users service exactly or every request is a 401. |
+| `ADMIN_USER_ID` | yes | The one user id allowed to write tournament data (the field and official results). There is no role model; the check is an id compare. |
+| `OPENAI_API_KEY` | for breakdowns | Used by the AI bracket breakdown. Unset, breakdown requests fail with a configuration error. |
+| `MOCK_BREAKDOWN` | no | `true` returns a canned breakdown instead of calling OpenAI. Use it for local work. |
+| `DRY_RUN` | no | Read by `migrateBrackets` only. Defaults to `true`; set `false` to write. |
+
+---
+
+## Scripts
+
+Every script builds first and runs against `MONGO_URI`.
+
+- `npm run seed`: seed brackets and tournament data for local use (additive; run after the users seed).
+- `npm run rebuild-games`: re-derive the `tournamentGames` collection from every year's official results in `tournamentData`. Run after entering or correcting results outside the Admin page.
+- `npm run backfill-games`: load `src/data/historical-games.json` (1985 to 2024, derived from Kaggle's March Machine Learning Mania data) for years that have no Admin-entered results. Never touches a tracked year.
+- `npx ts-node src/scripts/backtestOdds.ts`: score the odds model on held-out seasons.
 
 ---
 
@@ -133,7 +160,7 @@ volumes:
 │   ├── controllers/     # Logic for DB ops
 │   ├── models/          # Bracket model (interface)
 │   └── scripts/         # Seed script for local (must run AFTER users)
-├── dist/                # Compiled JS (after build)
+├── dist/                # Compiled JS (after build, not tracked)
 ├── .env
 ├── package.json
 ├── tsconfig.json
