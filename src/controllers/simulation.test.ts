@@ -79,6 +79,11 @@ describe('simulateBracket', () => {
     const random = rngFromSeed('x');
     expect(() => simulateBracket(odds, { favorite: 'x1', random })).toThrow(RangeError);
     expect(() => simulateBracket(odds, { favorite: 'e17', random })).toThrow(RangeError);
+    expect(() => simulateBracket(odds, { favorite: 'e0', random })).toThrow(RangeError);
+    // A leading zero parses to a valid seed but never matches a bracket key,
+    // so it must be refused rather than silently unboosted.
+    expect(() => simulateBracket(odds, { favorite: 'e01', random })).toThrow(RangeError);
+    expect(seedOf('m16')).toBe(16);
     expect(() => simulateBracket(odds, { boost: 101, random })).toThrow(RangeError);
     expect(() => simulateBracket(odds, { boost: -1, random })).toThrow(RangeError);
   });

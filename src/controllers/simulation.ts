@@ -30,13 +30,18 @@ const REGIONS: { name: keyof Omit<StructuredBracket, 'finals'>; prefix: string }
   { name: 'west', prefix: 'w' },
 ];
 
-export const SEED_KEY = /^[emsw](\d{1,2})$/;
+/**
+ * A canonical seed key: region letter plus seed 1 to 16 with no leading zero.
+ * Only this spelling matches the keys the bracket is built from, so "e01"
+ * must be rejected rather than parsed, or a favorite spelled that way would
+ * pass validation and never receive its boost.
+ */
+export const SEED_KEY = /^[emsw]([1-9]|1[0-6])$/;
 
 export function seedOf(key: string): number {
   const match = SEED_KEY.exec(key);
-  const seed = match ? parseInt(match[1], 10) : NaN;
-  if (!match || seed < 1 || seed > 16) throw new RangeError(`"${key}" is not a seed key like "e1"`);
-  return seed;
+  if (!match) throw new RangeError(`"${key}" is not a seed key like "e1"`);
+  return parseInt(match[1], 10);
 }
 
 /**
