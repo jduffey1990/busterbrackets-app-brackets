@@ -183,3 +183,22 @@ Verified against the local compose Mongo:
 4. **Orthogonality.** The JSON's basename must differ from the loader module's (`historical-games.json` beside `historicalGames.ts`) or ts-node resolves the import to the JSON; noted in the loader.
    `resolveJsonModule` was turned on in `tsconfig.json` for that import.
 5. **Branch and production guard.** All work on `feat/historical-odds`; `main` untouched; only the local compose Mongo was written.
+
+## Lambda migration (2026-11-04)
+
+Render's spin-down is replaced by Lambda behind an API Gateway HTTP API at `brackets-api.busterbrackets.com`.
+The cross-repo plan, apply runbook, and cutover steps live in `users/docs/LAMBDA_MIGRATION.md` (phase 3 there is this repo).
+`src/lambda.ts` is the Lambda entry point; `src/app.ts` still runs local and Docker.
+The OpenAI breakdown call now aborts at 20s so a slow upstream degrades to stats-only inside the 29s Lambda timeout.
+Node moves to 22 in `Dockerfile`, `ci.yml`, and `.no-mistakes.yaml` together; the gate keeps Node 20 until this merges, and the suite passes on both.
+
+### Phase gate - as built
+
+1. **Test coverage.** 57 jest tests (8 new): the handler through the real adapter with API Gateway v2 events (Mongo connected once per container, cold-start retry, 401, CORS preflight, authenticated `/odds` with its query string), and the OpenAI abort signal.
+   Mutation checks: the v1 adapter turns 3 of 5 handler tests red; removing the abort signal turns its test red.
+   Gaps: Terraform is validated offline only; the real cold start and the Atlas connect from Lambda are unmeasured until the first deploy; the 20s abort is asserted by signal presence, not by waiting 20s.
+2. **DRY.** `lambda.ts` and the Terraform duplicate the users repo by design (separate repos and pipelines), noted at the top of each.
+3. **Modularity.** Lambda adaptation lives only in `lambda.ts`; no route, service, or pure module changed apart from the one `fetch` option.
+4. **Orthogonality.** New couplings, each noted in a comment: `OPENAI_TIMEOUT_MS` against `lambda_timeout` and API Gateway's 30s cap; `payload_format_version = "2.0"` against `eventSourceName`; the state bucket name in both repos' `provider.tf`.
+   Node 22 joins the existing Dockerfile / `ci.yml` / `.no-mistakes.yaml` coupling, and the Lambda runtime and `buildspec.yml` now share it.
+5. **Branch and production guard.** All work uncommitted on `feat/lambda-migration`; `main` untouched; AWS only read, nothing applied; only the local compose stack was rebuilt.
