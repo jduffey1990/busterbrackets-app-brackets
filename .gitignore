@@ -1,3 +1,11 @@
 .env
 node_modules/
 dist/
+
+# Terraform: secrets and state never go in git (this repo is public).
+terraform.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+deployment.zip
+.lambda-out/

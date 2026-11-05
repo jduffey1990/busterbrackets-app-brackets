@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars (gitignored) and fill in. Never commit real values.
+
+codestar_connection_arn = "arn:aws:codeconnections:us-east-2:<account-id>:connection/<id>" # duffey-connect
+alert_email             = "you@example.com"
+
+mongo_uri      = "mongodb+srv://<user>:<password>@<cluster>/busterBrackets"
+jwt_secret     = "" # same value as the users service
+admin_user_id  = "" # Mongo _id of the admin account
+openai_api_key = "sk-proj-..."
