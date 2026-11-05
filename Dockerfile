@@ -1,5 +1,5 @@
 # Simple single-stage Dockerfile for brackets
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 
 # 1. Copy package.json and lock

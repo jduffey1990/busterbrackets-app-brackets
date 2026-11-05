@@ -63,5 +63,6 @@ The no-mistakes gate owns test execution and the correctness and security review
    - `StructuredBracket` is the wire shape for brackets, official results, and the simulation output, so a shape change touches `ui/src/views/Admin.vue`, `Builder.vue`, `Bracket.vue` and every service here;
    - host ports and `MONGO_URI` are agreed between `../docker-compose.yml`, each service's `.env`, and `ui/src/plugins/axios.js`;
    - the `.no-mistakes.yaml` commands and `.github/workflows/ci.yml` must run the same checks; change one, change both;
-   - the Node version appears in `Dockerfile`, `.github/workflows/ci.yml`, and the nvm path in `.no-mistakes.yaml`.
+   - the Node version appears in `Dockerfile`, `.github/workflows/ci.yml`, the nvm path in `.no-mistakes.yaml`, `buildspec.yml`, and `lambda_runtime` in `terraform/variables.tf`;
+   - `OPENAI_TIMEOUT_MS` in `breakdownService.ts` must stay under `lambda_timeout` (29s), which must stay under API Gateway's 30s cap.
 5. **Branch and production guard.** Confirm the phase's work is on its branch, nothing was committed to `main`, and nothing touched AWS or a production database.

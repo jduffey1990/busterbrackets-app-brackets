@@ -7,9 +7,9 @@
 agent: claude
 
 commands:
-  prepare: "PATH=/Users/jordanduffey/.nvm/versions/node/v20.19.6/bin:$PATH npm ci --prefer-offline"
-  lint: "PATH=/Users/jordanduffey/.nvm/versions/node/v20.19.6/bin:$PATH npx tsc --noEmit"
-  test: "PATH=/Users/jordanduffey/.nvm/versions/node/v20.19.6/bin:$PATH npm test -- --ci"
+  prepare: "PATH=/Users/jordanduffey/.nvm/versions/node/v22.19.0/bin:$PATH npm ci --prefer-offline"
+  lint: "PATH=/Users/jordanduffey/.nvm/versions/node/v22.19.0/bin:$PATH npx tsc --noEmit"
+  test: "PATH=/Users/jordanduffey/.nvm/versions/node/v22.19.0/bin:$PATH npm test -- --ci"
 
 # Compiled output is tracked in this repo; the reviewer should not read it as source.
 ignore_patterns:

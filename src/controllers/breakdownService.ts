@@ -20,6 +20,12 @@ import {
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 const MODEL = 'gpt-4o-mini';
 
+// Abort a slow OpenAI call so the breakdown degrades to stats-only instead of
+// the whole request dying. Coupled to lambda_timeout (29s) in
+// terraform/variables.tf and API Gateway's 30s cap: this must leave room for
+// the Mongo reads before it and the save after it.
+export const OPENAI_TIMEOUT_MS = 20_000;
+
 // Bump this whenever the prompt or comparison logic changes so previously
 // cached narratives are regenerated instead of served stale.
 const PROMPT_VERSION = 'v2';
@@ -149,6 +155,7 @@ export class BreakdownService {
 
     const response = await fetch(OPENAI_URL, {
       method: 'POST',
+      signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
