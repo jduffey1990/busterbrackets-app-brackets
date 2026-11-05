@@ -155,7 +155,8 @@ volumes:
 ```
 .
 ├── src/
-│   ├── app.ts           # Entry point
+│   ├── app.ts           # Entry point (local and Docker)
+│   ├── lambda.ts        # Lambda entry point (production)
 │   ├── routes/          # Hapi route handlers
 │   ├── controllers/     # Logic for DB ops
 │   ├── models/          # Bracket model (interface)
