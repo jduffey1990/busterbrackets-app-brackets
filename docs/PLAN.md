@@ -202,3 +202,21 @@ Node moves to 22 in `Dockerfile`, `ci.yml`, and `.no-mistakes.yaml` together; th
 4. **Orthogonality.** New couplings, each noted in a comment: `OPENAI_TIMEOUT_MS` against `lambda_timeout` and API Gateway's 30s cap; `payload_format_version = "2.0"` against `eventSourceName`; the state bucket name in both repos' `provider.tf`.
    Node 22 joins the existing Dockerfile / `ci.yml` / `.no-mistakes.yaml` coupling, and the Lambda runtime and `buildspec.yml` now share it.
 5. **Branch and production guard.** All work uncommitted on `feat/lambda-migration`; `main` untouched; AWS only read, nothing applied; only the local compose stack was rebuilt.
+
+## Mongo connect timeout (2026-11-05)
+
+The driver's default 30s server selection timeout outlasted the Lambda timeout, so an unreachable Atlas surfaced as `Task timed out` with no Mongo error logged, and the cold-start retry in `lambda.ts` never ran.
+Reproduced in the Lambda emulator with users' 10s timeout: `Task timed out after 10.00 seconds`.
+`MongoClient` now takes `serverSelectionTimeoutMS: MONGO_SERVER_SELECTION_TIMEOUT_MS` (5s), and a failed connect closes its client so the retry starts clean.
+After the fix the same emulator run returns a logged `MongoServerSelectionError` in 7.6s.
+The same change ships in the users repo on its own `fix/mongo-connect-timeout` branch.
+
+### Phase gate - as built
+
+1. **Test coverage.** 58 jest tests (1 new): the real driver against a refused port rejects in about 5s, under the 10s Lambda budget.
+   Mutation check: removing the option turns it red at 30,039ms.
+   Gaps: the timeout applies to every operation, but only the connect path is tested; the emulator run is amd64 under emulation, so the 2.6s on top of the 5s is slower than real Lambda.
+2. **DRY.** `mongodb.service.ts` is duplicated in the users repo by design (separate repos); both copies change identically.
+3. **Modularity.** The change is confined to `DatabaseService.connect`; no route or pure module changed.
+4. **Orthogonality.** New coupling `MONGO_SERVER_SELECTION_TIMEOUT_MS` against `lambda_timeout`, noted in the code comment and the CLAUDE.md list.
+5. **Branch and production guard.** Work uncommitted on `fix/mongo-connect-timeout`; `main` untouched; AWS and production Mongo not touched.
