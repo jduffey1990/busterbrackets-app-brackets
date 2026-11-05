@@ -65,4 +65,5 @@ The no-mistakes gate owns test execution and the correctness and security review
    - the `.no-mistakes.yaml` commands and `.github/workflows/ci.yml` must run the same checks; change one, change both;
    - the Node version appears in `Dockerfile`, `.github/workflows/ci.yml`, the nvm path in `.no-mistakes.yaml`, `buildspec.yml`, and `lambda_runtime` in `terraform/variables.tf`;
    - `OPENAI_TIMEOUT_MS` in `breakdownService.ts` must stay under `lambda_timeout` (29s), which must stay under API Gateway's 30s cap.
+   - `MONGO_SERVER_SELECTION_TIMEOUT_MS` in `mongodb.service.ts` (5s) must stay well under `lambda_timeout`, in this repo and in users (10s), so an unreachable Atlas is a logged error and not a silent Lambda timeout.
 5. **Branch and production guard.** Confirm the phase's work is on its branch, nothing was committed to `main`, and nothing touched AWS or a production database.
